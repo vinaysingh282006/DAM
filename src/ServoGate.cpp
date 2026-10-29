@@ -50,10 +50,6 @@ void ServoGate::update(unsigned long now) {
             _writeAngle(_actualAngle);
             _lastMoved = now;
         }
-        // Check idle detach
-        if (_attached && (now - _lastMoved) > SERVO_IDLE_DETACH_MS) {
-            _detach();
-        }
         return;
     }
 
@@ -99,6 +95,8 @@ bool ServoGate::isMoving() const {
 // ──────────────────────────────────────────────────────────
 void ServoGate::_attach() {
 #ifndef NATIVE_UNIT_TEST
+    ESP32PWM::allocateTimer(3);
+    _servo.setPeriodHertz(50);
     _servo.attach(PIN_SERVO, SERVO_PWM_MIN_US, SERVO_PWM_MAX_US);
 #endif
     _attached = true;

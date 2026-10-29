@@ -1,0 +1,295 @@
+/**
+ * AquaGuard — Layout CSS
+ * Global layout: body, safe-area, header, main scroll area, bottom nav.
+ */
+
+/* ── Reset ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family:      var(--font-body);
+  background-color: var(--bg-base);
+  color:            var(--text-primary);
+  min-height:       100dvh;
+  overflow-x:       hidden;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Safe area insets (iPhone notch) ────────────────────── */
+.app-header {
+  padding-top: max(var(--space-sm), env(safe-area-inset-top));
+}
+.bottom-nav {
+  padding-bottom: max(var(--space-xs), env(safe-area-inset-bottom));
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.app-header {
+  position:         sticky;
+  top:              0;
+  z-index:          var(--z-banner);
+  display:          flex;
+  align-items:      center;
+  justify-content:  space-between;
+  padding:          var(--space-sm) var(--space-md);
+  background:       rgba(10,14,26,0.92);
+  backdrop-filter:  blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom:    1px solid var(--glass-border);
+  gap:              var(--space-sm);
+}
+
+.header-left {
+  display:    flex;
+  align-items:center;
+  gap:        var(--space-sm);
+}
+
+.header-logo {
+  font-size:  1.5rem;
+}
+
+.header-title-group {
+  display:        flex;
+  flex-direction: column;
+}
+
+.header-title {
+  font-family:  var(--font-headline);
+  font-size:    1.1rem;
+  font-weight:  700;
+  color:        var(--cyan);
+  line-height:  1.1;
+}
+
+.header-subtitle {
+  font-family:  var(--font-mono);
+  font-size:    0.5rem;
+  letter-spacing: 0.1em;
+  color:        var(--text-muted);
+}
+
+.header-right {
+  display:    flex;
+  align-items:center;
+  gap:        var(--space-sm);
+  flex-shrink:0;
+}
+
+/* ── Main content ────────────────────────────────────────── */
+.app-main {
+  position:    relative;
+  padding:     var(--space-md);
+  padding-bottom: calc(80px + var(--space-md));
+  max-width:   480px;
+  margin:      0 auto;
+  min-height:  calc(100dvh - 60px - 72px);
+}
+
+/* ── Tab panels ──────────────────────────────────────────── */
+.tab-panel {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+.tab-panel.active {
+  display: flex;
+}
+
+/* ── Bottom navigation ───────────────────────────────────── */
+.bottom-nav {
+  position:       fixed;
+  bottom:         0;
+  left:           0;
+  right:          0;
+  display:        grid;
+  grid-template-columns: repeat(4, 1fr);
+  background:     rgba(10,14,26,0.95);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top:     1px solid var(--glass-border);
+  z-index:        var(--z-banner);
+  height:         72px;
+}
+
+.nav-tab {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  justify-content:center;
+  gap:            2px;
+  background:     none;
+  border:         none;
+  color:          var(--text-muted);
+  cursor:         pointer;
+  padding:        var(--space-xs) var(--space-sm);
+  min-height:     var(--touch-min);
+  position:       relative;
+  transition:     color var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-tab.active {
+  color: var(--cyan);
+}
+
+.nav-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 25%;
+  right: 25%;
+  height: 2px;
+  background: var(--cyan);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--cyan-glow);
+}
+
+.nav-icon { font-size: 1.25rem; line-height: 1; }
+.nav-label {
+  font-family:  var(--font-mono);
+  font-size:    0.55rem;
+  font-weight:  500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── Alarm banner ───────────────────────────────────────── */
+.alarm-banner {
+  position:       fixed;
+  top:            0;
+  left:           0;
+  right:          0;
+  z-index:        var(--z-dialog);
+  display:        flex;
+  align-items:    center;
+  justify-content:space-between;
+  gap:            var(--space-sm);
+  padding:        var(--space-sm) var(--space-md);
+  padding-top:    max(var(--space-sm), env(safe-area-inset-top));
+  background:     var(--red);
+  color:          #fff;
+  font-family:    var(--font-headline);
+  font-weight:    600;
+  font-size:      0.875rem;
+  animation:      pulse-banner 0.5s ease infinite alternate;
+}
+
+.alarm-banner.warning {
+  background: var(--amber);
+  color: #1a1a1a;
+  animation: pulse-banner-warn 0.8s ease infinite alternate;
+}
+
+.alarm-ack-btn {
+  background:   rgba(0,0,0,0.3);
+  border:       1px solid rgba(255,255,255,0.4);
+  color:        #fff;
+  font-family:  var(--font-mono);
+  font-size:    0.75rem;
+  padding:      4px 12px;
+  border-radius:var(--radius-pill);
+  cursor:       pointer;
+  flex-shrink:  0;
+  min-height:   var(--touch-min);
+}
+
+/* ── Offline overlay ─────────────────────────────────────── */
+.offline-overlay {
+  position:   fixed;
+  inset:      0;
+  z-index:    var(--z-overlay);
+  background: rgba(10,14,26,0.9);
+  display:    flex;
+  align-items:center;
+  justify-content:center;
+  backdrop-filter: blur(8px);
+}
+
+.offline-card {
+  background: var(--glass-bg);
+  border:     1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding:    var(--space-xl);
+  text-align: center;
+  max-width:  300px;
+  width:      90%;
+  display:    flex;
+  flex-direction:column;
+  gap:        var(--space-md);
+}
+
+.offline-icon { font-size: 3rem; }
+.offline-title {
+  font-family: var(--font-headline);
+  font-size:   1.25rem;
+  font-weight: 700;
+  color:       var(--text-primary);
+}
+.offline-sub, .offline-retry-text, .offline-last {
+  font-family: var(--font-body);
+  font-size:   0.875rem;
+  color:       var(--text-secondary);
+}
+.offline-last { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); }
+
+/* ── Dialog ─────────────────────────────────────────────── */
+.dialog-backdrop {
+  position:   fixed;
+  inset:      0;
+  z-index:    var(--z-dialog);
+  background: rgba(0,0,0,0.7);
+  display:    flex;
+  align-items:center;
+  justify-content:center;
+  backdrop-filter: blur(4px);
+}
+
+.dialog-card {
+  background: var(--bg-surface-mid);
+  border:     1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding:    var(--space-lg);
+  max-width:  320px;
+  width:      90%;
+  display:    flex;
+  flex-direction:column;
+  gap:        var(--space-md);
+}
+
+.dialog-title {
+  font-family: var(--font-headline);
+  font-size:   1.1rem;
+  font-weight: 600;
+}
+.dialog-body {
+  font-size:  0.9rem;
+  color:      var(--text-secondary);
+  line-height:1.5;
+}
+.dialog-actions {
+  display:  flex;
+  gap:      var(--space-sm);
+}
+.dialog-cancel-btn, .dialog-confirm-btn {
+  flex:       1;
+  min-height: var(--touch-min);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size:  0.8rem;
+  font-weight:600;
+  cursor:     pointer;
+  border:     none;
+  transition: opacity var(--transition-fast);
+}
+.dialog-cancel-btn {
+  background: var(--glass-bg);
+  border:     1px solid var(--glass-border);
+  color:      var(--text-primary);
+}
+
+/* ── Utility ─────────────────────────────────────────────── */
+.hidden { display: none !important; }
+.mono   { font-family: var(--font-mono); }

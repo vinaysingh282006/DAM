@@ -32,6 +32,7 @@ void Turbine::begin() {
 // ──────────────────────────────────────────────────────────
 void Turbine::setControl(bool on, int speedPct) {
     _on = on;
+    if (_on && speedPct <= 0) speedPct = 85;
     _speedPct = constrain(speedPct, 0, 100);
 
 #ifndef NATIVE_UNIT_TEST

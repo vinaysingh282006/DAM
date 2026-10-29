@@ -374,11 +374,13 @@ Here is what happens from physics to browser in under 60 milliseconds:
 | **Water Level** | GATE FLOW | **GPIO 13** | Input Pullup | LOW = Wet (Confirms water discharging from gate) |
 | **Water Basin** | GND Reference | **GND** | Ground | Bare submerged wire at bottom of reservoir |
 | **Flame Sensor** | Digital Out | **GPIO 23** | Digital Input | Active LOW when IR flame detected |
-| **L298N Pump 1** | IN1 / IN2 | **GPIO 16 / 17** | 3.3V Logic | Direction control for Inlet Pump |
-| **L298N Pump 1** | ENA (PWM) | **GPIO 4** | 3.3V PWM (1 kHz) | Speed control (0–100%) |
-| **L298N Pump 2** | IN1 / IN2 | **GPIO 19 / 21** | 3.3V Logic | Direction control for Outlet Pump |
-| **L298N Pump 2** | ENB (PWM) | **GPIO 22** | 3.3V PWM (1 kHz) | Speed control (0–100%) |
-| **Piezo Buzzer**| Signal | **GPIO 5** | 3.3V PWM Tone | Slow chirp (Warning), Fast siren (Critical) |
+| **L298N Pump 1** | IN1 / IN2 | **GPIO 16 / 17** | 3.3V Logic | Reversible: Forward (IN1=H, IN2=L) = Inlet; Reverse (IN1=L, IN2=H) = Drain |
+| **L298N Pump 1** | ENA (PWM) | **GPIO 4** | 3.3V PWM (1 kHz) | Speed control (0–100%) — *Remove jumper cap on ENA!* |
+| **L298N Pump 2** | IN3 / IN4 | **GPIO 19 / 21** | 3.3V Logic | Direction control for Outlet Pump (IN3=H, IN4=L) |
+| **L298N Pump 2** | ENB (PWM) | **GPIO 22** | 3.3V PWM (1 kHz) | Speed control (0–100%) — *Remove jumper cap on ENB!* |
+| **Hydro Turbine** | Motor PWM | **GPIO 15** | 3.3V PWM (1 kHz) | Turbine DC motor speed drive via MOSFET / NPN Driver |
+| **Hydro Turbine** | Voltage Sense | **GPIO 34** | 0–3.3V Analog (ADC1_CH6) | Voltage divider (10kΩ/3.3kΩ) to measure generated voltage |
+| **Piezo Buzzer** | Signal (+) | **GPIO 5** | 3.3V PWM Tone (LEDC) | Tone alarms; auto-silences after 3.8s even if alarm holds |
 | **Status LED** | Onboard LED | **GPIO 2** | Active HIGH | Heartbeat pulse / alarm blink |
 
 ---

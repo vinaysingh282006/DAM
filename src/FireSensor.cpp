@@ -10,9 +10,8 @@
 
 // ──────────────────────────────────────────────────────────
 void FireSensor::begin() {
-    // Most flame modules have an internal pull-up; use INPUT to avoid conflict.
-    // If your module needs INPUT_PULLUP, change here.
-    pinMode(PIN_FLAME_DO, INPUT);
+    // Use INPUT_PULLUP so a disconnected or floating pin defaults to HIGH (inactive)
+    pinMode(PIN_FLAME_DO, INPUT_PULLUP);
     _detected   = false;
     _pending    = false;
     _debCounter = 0;

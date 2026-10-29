@@ -75,7 +75,7 @@ constexpr unsigned long PUMP_DRY_WARN_MS = 60000; ///< Warn if pump on & LOW dry
 // ────────────────────────────────────────────────────────────
 //  Hydro-Electric Turbine Demo (DC Motor + Sensing)
 // ────────────────────────────────────────────────────────────
-constexpr int   TURBINE_LEDC_CH        = 3;       ///< LEDC channel for Turbine DC motor
+constexpr int   TURBINE_LEDC_CH        = 4;       ///< LEDC channel for Turbine DC motor (Timer 2, isolated from buzzer Timer 1)
 constexpr int   TURBINE_PWM_FREQ_HZ    = 1000;    ///< 1 kHz PWM
 constexpr int   TURBINE_PWM_BITS       = 8;       ///< Resolution (0-255)
 constexpr float TURBINE_VOLT_CAL_RATIO = 4.0f;    ///< Multiplier for 10k/3.3k divider to 12V max
@@ -102,15 +102,21 @@ constexpr bool  FLAME_ACTIVE_LOW       = true;   ///< true = LOW means flame det
 constexpr int   FLAME_DEBOUNCE_READS   = 3;
 
 // ────────────────────────────────────────────────────────────
-//  Buzzer (LEDC channel 2)
+//  Buzzer Tones & Timeout Configuration (LEDC channel 2)
 // ────────────────────────────────────────────────────────────
 constexpr int   BUZZER_LEDC_CH         = 2;
-constexpr int   BUZZER_SLOW_FREQ_HZ    = 500;
-constexpr int   BUZZER_FAST_FREQ_HZ    = 1000;
-constexpr unsigned long BUZZER_SLOW_ON_MS  = 200;
-constexpr unsigned long BUZZER_SLOW_OFF_MS = 800;
-constexpr unsigned long BUZZER_FAST_ON_MS  = 100;
-constexpr unsigned long BUZZER_FAST_OFF_MS = 150;
+constexpr unsigned long BUZZER_MAX_DURATION_MS = 3800; ///< Maximum beep duration (3.8 seconds) before auto-silencing
+
+// Frequencies for distinct, non-annoying tones:
+constexpr int   BUZZER_FREQ_FIRE_HIGH  = 988;   ///< Fire alarm high tone (B5)
+constexpr int   BUZZER_FREQ_FIRE_LOW   = 659;   ///< Fire alarm low tone (E5)
+constexpr int   BUZZER_FREQ_GAS        = 750;   ///< Gas warning staccato tone
+constexpr int   BUZZER_FREQ_PROX       = 1150;  ///< Proximity gate obstacle chirp
+constexpr int   BUZZER_FREQ_FLOOD      = 440;   ///< Flood warning low resonance
+constexpr int   BUZZER_FREQ_FAULT      = 600;   ///< Sensor disconnect/fault tone
+constexpr int   BUZZER_FREQ_BOOT1      = 523;   ///< Boot chime note 1 (C5)
+constexpr int   BUZZER_FREQ_BOOT2      = 659;   ///< Boot chime note 2 (E5)
+constexpr int   BUZZER_FREQ_BOOT3      = 784;   ///< Boot chime note 3 (G5)
 
 // ────────────────────────────────────────────────────────────
 //  Auto Mode Gate Control
@@ -136,9 +142,9 @@ constexpr unsigned long HISTORY_INTERVAL_MS = 5000;     ///< Record every 5 s
 constexpr int   WDT_TIMEOUT_S          = 10;
 
 // ────────────────────────────────────────────────────────────
-//  API Rate Limiting
+//  API Rate Limiting (0 = zero delay, immediate response)
 // ────────────────────────────────────────────────────────────
-constexpr unsigned long CMD_RATE_LIMIT_MS = 100; ///< Min ms between commands
+constexpr unsigned long CMD_RATE_LIMIT_MS = 0; ///< Zero rate limiting: instant actuator response
 
 // ────────────────────────────────────────────────────────────
 //  Firmware Version

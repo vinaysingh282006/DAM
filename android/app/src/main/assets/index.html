@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+  <title>AquaGuard SCADA — Reservoir Control</title>
+  
+  <!-- High-Performance 100% Offline System Fonts -->
+  
+  <!-- Tailwind CSS (Served directly from LittleFS - 100% Offline Compatible) -->
+  <script src="/js/tailwind.js"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container-lowest": "#0a0e1a",
+            "surface-container-low": "#171b28",
+            "surface-container": "#1b1f2c",
+            "surface-container-high": "#262a37",
+            "surface-container-highest": "#313442",
+            "surface": "#0f131f",
+            "surface-dim": "#0f131f",
+            "surface-bright": "#353946",
+            "surface-variant": "#313442",
+            "surface-tint": "#3cd7ff",
+            "primary": "#a8e8ff",
+            "primary-container": "#00d4ff",
+            "primary-fixed": "#b4ebff",
+            "primary-fixed-dim": "#3cd7ff",
+            "on-primary": "#003642",
+            "on-primary-container": "#00586b",
+            "secondary": "#4edea3",
+            "secondary-container": "#00a572",
+            "secondary-fixed": "#6ffbbe",
+            "secondary-fixed-dim": "#4edea3",
+            "on-secondary": "#003824",
+            "on-secondary-container": "#00311f",
+            "tertiary": "#ffd5d1",
+            "tertiary-container": "#ffaea8",
+            "tertiary-fixed": "#ffdad7",
+            "tertiary-fixed-dim": "#ffb3ad",
+            "on-tertiary": "#68000a",
+            "on-tertiary-container": "#a40217",
+            "error": "#ffb4ab",
+            "error-container": "#93000a",
+            "on-error": "#690005",
+            "on-error-container": "#ffdad6",
+            "background": "#0f131f",
+            "on-background": "#dfe2f3",
+            "on-surface": "#dfe2f3",
+            "on-surface-variant": "#bbc9cf",
+            "outline": "#859398",
+            "outline-variant": "#3c494e"
+          },
+          fontFamily: {
+            "headline-xl": ["system-ui", "-apple-system", "sans-serif"],
+            "headline-lg": ["system-ui", "-apple-system", "sans-serif"],
+            "headline-md": ["system-ui", "-apple-system", "sans-serif"],
+            "headline-lg-mobile": ["system-ui", "-apple-system", "sans-serif"],
+            "headline-xl-mobile": ["system-ui", "-apple-system", "sans-serif"],
+            "body-lg": ["system-ui", "-apple-system", "sans-serif"],
+            "body-md": ["system-ui", "-apple-system", "sans-serif"],
+            "body-sm": ["system-ui", "-apple-system", "sans-serif"],
+            "label-lg": ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
+            "label-md": ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
+            "label-sm": ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
+            "metric-display": ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
+            "metric-display-mobile": ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"]
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    @keyframes waveSlide {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    @keyframes chevronPulse {
+      0%, 100% { opacity: 0.35; transform: translateY(0); }
+      50% { opacity: 1; transform: translateY(3px); }
+    }
+    @keyframes radarScan {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+    .wave-anim {
+      animation: waveSlide 4.5s linear infinite;
+    }
+    .chevron-down-flow {
+      animation: chevronPulse 1.8s ease-in-out infinite;
+    }
+    .radar-sweep-anim {
+      animation: radarScan 3.5s linear infinite;
+      transform-origin: center center;
+    }
+    .hazard-stripe {
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(239, 68, 68, 0.2),
+        rgba(239, 68, 68, 0.2) 8px,
+        rgba(245, 158, 11, 0.25) 8px,
+        rgba(245, 158, 11, 0.25) 16px
+      );
+    }
+    .tactical-mesh {
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(0, 212, 255, 0.08) 0%, transparent 60%),
+        linear-gradient(rgba(148, 163, 184, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 24px 24px, 24px 24px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 9999px;
+      background: #00d4ff;
+      cursor: pointer;
+      box-shadow: 0 0 12px #00d4ff;
+      border: 2px solid #0a0e1a;
+    }
+    .tab-panel {
+      display: none;
+    }
+    .tab-panel.active {
+      display: block;
+    }
+  </style>
+</head>
+
+<body class="bg-surface-container-lowest text-on-surface antialiased min-h-screen flex justify-center selection:bg-primary-container selection:text-surface-container-lowest tactical-mesh">
+
+<!-- Mobile Canonical Container Shell (Responsive 100% width, max 440px) -->
+<div class="relative w-full max-w-[440px] min-h-[100dvh] bg-surface-container-lowest pb-4 overflow-x-hidden shadow-[0_0_50px_rgba(0,0,0,0.85)] border-x border-cyan-500/10 flex flex-col">
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- TOP APP BAR (Modern Sleek Header)                          -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <header class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-3.5 h-14 w-full max-w-[440px] mx-auto bg-[#0a0e1a]/95 backdrop-blur-xl border-b border-cyan-500/20 shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
+    <div class="flex items-center space-x-2.5">
+      <div class="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-400 shadow-[0_0_10px_rgba(0,212,255,0.2)]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+        </svg>
+      </div>
+      <div class="flex flex-col">
+        <span class="font-headline-md text-sm font-bold tracking-tight text-cyan-300 leading-none">AquaGuard SCADA</span>
+        <span class="font-label-sm text-[9px] text-slate-400 tracking-wider mt-0.5" id="top-sub-bar">SECTOR 04 • HYDRO-TELEMETRY</span>
+      </div>
+    </div>
+    <div class="flex items-center space-x-2">
+      <!-- Mute / Sound Toggle Button -->
+      <button class="p-1.5 rounded-lg bg-surface-container border border-cyan-500/20 active:scale-90 transition-all text-slate-400 hover:text-cyan-400 flex items-center justify-center min-w-[32px] min-h-[32px]" id="sound-toggle-btn" onclick="sound.toggle()" type="button" title="Toggle audio alarms">
+        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+      </button>
+
+      <!-- Status Badge -->
+      <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-950/40 border border-emerald-500/40" id="top-status-badge">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" id="top-status-dot"></span>
+        <span class="font-label-sm text-[10px] text-emerald-400 font-bold tracking-wider font-mono" id="top-status-text">ONLINE</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- TAB 1: OVERVIEW (HOME)                                      -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <main class="tab-panel active pt-16 px-3.5 space-y-3.5 pb-28" id="tab-overview">
+    
+    <!-- Node IP & Status State Banner -->
+    <section class="flex flex-col space-y-2 mt-1">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-1.5 bg-surface-container/80 px-2.5 py-1 rounded-full border border-outline-variant/30">
+          <span class="w-1.5 h-1.5 rounded-full bg-secondary shadow-[0_0_8px_#4edea3]" id="conn-dot"></span>
+          <span class="font-label-sm text-[11px] text-on-surface-variant font-mono" id="node-ip-label">NODE 192.168.4.1</span>
+        </div>
+        <span class="font-label-sm text-[10px] text-primary tracking-widest uppercase opacity-80" id="mode-badge-label">AUTO MODE • R-ZONE 04</span>
+      </div>
+
+      <!-- Disconnected Sensor Alarm Banner -->
+      <div id="sensor-fault-banner" class="hidden rounded-2xl p-3 bg-red-950/90 border border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.4)] flex items-center justify-between text-red-200">
+        <div class="flex items-center space-x-2.5">
+          <svg class="w-6 h-6 text-red-400 animate-pulse shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+          </svg>
+          <div>
+            <span class="font-headline-md font-bold text-red-300 text-sm block leading-tight">SENSOR DISCONNECTED</span>
+            <span class="font-label-sm text-[10px] text-red-200 uppercase tracking-wider" id="sensor-fault-detail">CRITICAL: Sensor line open or detached</span>
+          </div>
+        </div>
+        <span class="px-2 py-0.5 rounded bg-red-600/40 border border-red-500 text-white font-mono text-[10px] font-bold shrink-0">FAULT</span>
+      </div>
+
+      <!-- Proximity Auto-Warning Alert Banner -->
+      <div id="prox-warning-banner" class="hidden rounded-2xl p-3 bg-amber-950/90 border border-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.4)] flex items-center justify-between text-amber-200">
+        <div class="flex items-center space-x-2.5">
+          <svg class="w-6 h-6 text-amber-400 animate-bounce shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <div>
+            <span class="font-headline-md font-bold text-amber-300 text-sm block leading-tight">PROXIMITY AUTO-WARNING</span>
+            <span class="font-label-sm text-[10px] text-amber-200 uppercase tracking-wider" id="prox-warning-detail">Obstacle within 40cm of gate! Interlock engaged.</span>
+          </div>
+        </div>
+        <span class="px-2 py-0.5 rounded bg-amber-600/40 border border-amber-500 text-white font-mono text-[10px] font-bold animate-pulse shrink-0">AUTO WARN</span>
+      </div>
+
+      <!-- State Banner (SAFE / WARNING / CRITICAL) -->
+      <div class="rounded-2xl p-3 bg-secondary/10 border border-secondary/40 flex items-center justify-between shadow-[0_0_15px_rgba(16,185,129,0.25)] transition-all" id="home-state-banner">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-secondary-container/30 border border-secondary flex items-center justify-center text-secondary shrink-0" id="state-banner-icon-wrap">
+            <span id="state-banner-icon">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </span>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-headline-lg font-bold text-secondary tracking-tight text-xl" id="state-banner-title">SAFE</span>
+              <span class="px-1.5 py-0.5 rounded bg-secondary/20 font-label-sm text-[10px] text-secondary font-bold" id="state-banner-code">STATE A</span>
+            </div>
+            <p class="font-label-sm text-on-surface-variant uppercase tracking-wider text-[10px]" id="state-banner-sub">NORMAL OPERATION • LEVEL OPTIMAL</p>
+          </div>
+        </div>
+        <button class="hidden px-3 py-1 bg-red-600 hover:bg-red-500 text-white rounded font-bold font-label-sm text-xs shadow-lg transition-all" id="banner-ack-btn" onclick="api.ack()">ACK</button>
+      </div>
+    </section>
+
+    <!-- Water Tank Telemetry Card -->
+    <section class="rounded-[20px] p-4 bg-white/[0.04] backdrop-blur-xl border border-primary-container/25 shadow-[0_0_24px_rgba(0,212,255,0.08)] flex flex-col space-y-3">
+      <div class="flex items-center justify-between">
+        <div>
+          <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider block">RESERVOIR CAPACITY</span>
+          <span class="font-headline-md text-base font-bold text-on-surface">VALLEY POOL #2</span>
+        </div>
+        <div class="text-right">
+          <span class="font-metric-display text-2xl text-primary-container leading-none font-bold font-mono" id="water-capacity-metric">2,500</span>
+          <span class="font-label-sm text-[9px] text-on-surface-variant block uppercase">MILLILITERS (MINI DAM)</span>
+        </div>
+      </div>
+
+      <!-- Water Tank Graphic Simulation Column -->
+      <div class="relative w-full h-44 rounded-xl bg-surface-container-lowest/90 border border-outline-variant/40 overflow-hidden p-2 flex flex-col justify-end" id="tank-col-wrap">
+        <!-- 95% DAM WARNING CRITICAL -->
+        <div class="absolute top-[5%] left-0 right-0 z-20 flex items-center px-2 pointer-events-none">
+          <span class="font-label-sm text-error font-bold pr-1 text-[9px] bg-surface-container-lowest/80 rounded px-1">95% CRIT</span>
+          <div class="flex-1 border-t border-dashed border-error opacity-75"></div>
+          <span class="w-1.5 h-1.5 rounded-full bg-error ml-1 animate-ping"></span>
+        </div>
+        <!-- 75% HIGH -->
+        <div class="absolute top-[25%] left-0 right-0 z-20 flex items-center px-2 pointer-events-none">
+          <span class="font-label-sm text-tertiary-container pr-1 text-[9px] bg-surface-container-lowest/80 rounded px-1">75% HIGH</span>
+          <div class="flex-1 border-t border-dashed border-tertiary-container/80"></div>
+        </div>
+        <!-- 50% MED -->
+        <div class="absolute top-[50%] left-0 right-0 z-20 flex items-center px-2 pointer-events-none">
+          <span class="font-label-sm text-primary-container pr-1 text-[9px] bg-surface-container-lowest/90 rounded px-1 font-semibold">50% MED</span>
+          <div class="flex-1 border-t border-dashed border-primary-container"></div>
+        </div>
+        <!-- 25% LOW -->
+        <div class="absolute top-[75%] left-0 right-0 z-20 flex items-center px-2 pointer-events-none">
+          <span class="font-label-sm text-on-surface-variant pr-1 text-[9px] bg-surface-container-lowest/80 rounded px-1">25% LOW</span>
+          <div class="flex-1 border-t border-dashed border-outline-variant/60"></div>
+        </div>
+
+        <!-- Animated Water Fill Box -->
+        <div class="relative w-full rounded-b-lg overflow-hidden bg-gradient-to-b from-primary-container to-inverse-primary/90 transition-all duration-500" id="water-fill-box" style="height: 25%;">
+          <div class="absolute -top-3 left-0 w-[200%] h-6 wave-anim pointer-events-none">
+            <svg class="w-full h-full preserve-3d" fill="none" viewBox="0 0 1200 40" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0 20 C 150 0, 150 40, 300 20 C 450 0, 450 40, 600 20 C 750 0, 750 40, 900 20 C 1050 0, 1050 40, 1200 20 L 1200 40 L 0 40 Z" fill="#00d4ff" fill-opacity="0.6"/>
+              <path d="M0 25 C 100 10, 200 40, 300 25 C 400 10, 500 40, 600 25 C 700 10, 800 40, 900 25 C 1000 10, 1100 40, 1200 25 L 1200 40 L 0 40 Z" fill="#3cd7ff" fill-opacity="0.3"/>
+            </svg>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/60 via-transparent to-primary-container/20"></div>
+        </div>
+
+        <!-- Foreground Metric Readout Over Water -->
+        <div class="absolute inset-0 z-30 flex flex-col items-center justify-center pointer-events-none">
+          <span class="font-metric-display text-3xl text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] font-bold tracking-tight font-mono" id="water-pct-display">25%</span>
+          <span class="font-label-sm text-primary-fixed drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)] uppercase tracking-wider text-[10px]" id="water-elevation-label">LOW POOL ELEVATION</span>
+        </div>
+      </div>
+
+      <!-- Telemetry Details Footer -->
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <div class="bg-surface-container-lowest/50 border border-outline-variant/30 rounded-lg p-2">
+          <span class="font-label-sm text-on-surface-variant block text-[10px]">INLET RATE (PUMP 1)</span>
+          <span class="font-label-md text-secondary font-mono text-xs font-semibold" id="inlet-rate-label">0.0 mL/s</span>
+        </div>
+        <div class="bg-surface-container-lowest/50 border border-outline-variant/30 rounded-lg p-2">
+          <span class="font-label-sm text-on-surface-variant block text-[10px]">TAILRACE DRAINAGE</span>
+          <span class="font-label-md text-on-surface font-mono text-xs font-semibold" id="outlet-rate-label">0.0 mL/s</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Spillway Gate Graphic Card (SG90 Servo) -->
+    <section class="rounded-[20px] p-4 bg-white/[0.04] backdrop-blur-xl border border-white/10 shadow-[0_0_24px_rgba(0,0,0,0.4)] flex flex-col space-y-2.5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+          <span class="font-headline-md text-sm text-on-surface font-semibold">SPILLWAY GATE ALPHA</span>
+        </div>
+        <div class="bg-primary-container/10 border border-primary-container/30 px-2 py-0.5 rounded font-label-sm text-[11px] text-primary-container font-mono" id="gate-angle-pill">
+          0° CLOSED
+        </div>
+      </div>
+
+      <!-- Industrial Sluice Gate SVG Schematic -->
+      <div class="relative w-full h-32 rounded-xl bg-surface-container-lowest/80 border border-outline-variant/30 p-2 flex items-center justify-between overflow-hidden">
+        <svg class="w-full h-full" fill="none" viewBox="0 0 320 110" xmlns="http://www.w3.org/2000/svg">
+          <!-- Concrete Dam Wall Crest -->
+          <path d="M10 10 L80 10 L70 85 L10 85 Z" fill="#262A37" stroke="#3C494E" stroke-width="2"/>
+          <text fill="#859398" font-family="JetBrains Mono" font-size="8" x="18" y="48">CREST</text>
+          <!-- Spillway Invert Chute -->
+          <path d="M70 85 Q110 85 160 92 L310 95 L310 108 L10 108 L10 85 Z" fill="#171B28" stroke="#3C494E" stroke-width="1.5"/>
+          <!-- Pivot point -->
+          <circle cx="160" cy="30" fill="#3CD7FF" r="5" stroke="#00D4FF" stroke-width="2"/>
+          <line stroke="#859398" stroke-dasharray="2 1" stroke-width="3" x1="160" x2="88" y1="30" y2="60"/>
+          
+          <!-- Rotatable Gate Arm -->
+          <g id="svg-gate-arm" transform-origin="160 30" style="transition: transform 0.3s ease-out;">
+            <path d="M82 48 Q94 65 96 74" stroke="#00D4FF" stroke-linecap="round" stroke-width="5" id="svg-gate-leaf"/>
+          </g>
+          <text fill="#3CD7FF" font-family="JetBrains Mono" font-size="9" font-weight="bold" x="110" y="40" id="svg-angle-text">θ = 0°</text>
+
+          <!-- Water Discharge Stream -->
+          <path id="svg-discharge-stream" d="M86 76 Q120 78 180 88 T310 90 L310 98 L86 98 Z" fill="url(#flowGrad)" opacity="0"/>
+          
+          <!-- Chevron flow arrows -->
+          <g class="chevron-down-flow" id="svg-flow-chevrons" fill="none" stroke="#A8E8FF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" opacity="0">
+            <path d="M140 82 L150 86 L140 90"/>
+            <path d="M190 84 L200 88 L190 92"/>
+            <path d="M240 86 L250 90 L240 94"/>
+          </g>
+
+          <defs>
+            <linearGradient id="flowGrad" x1="86" x2="310" y1="80" y2="95" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#00D4FF"/>
+              <stop offset="0.6" stop-color="#00586B"/>
+              <stop offset="1" stop-color="#171B28"/>
+            </linearGradient>
+          </defs>
+        </svg>
+
+        <div class="absolute bottom-2 right-2 bg-surface-container-high/90 border border-primary-container/40 rounded px-2 py-1 text-right">
+          <span class="font-label-sm text-[8px] text-on-surface-variant block uppercase">DISCHARGE FLOW</span>
+          <span class="font-label-md text-[11px] text-primary-container font-mono font-bold" id="gate-flow-rate-text">0.0 mL/s</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between space-x-2 pt-1">
+        <div class="flex-1 bg-surface-container/60 border border-outline-variant/30 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+          <span class="font-label-sm text-[10px] text-on-surface-variant">SERVO BUS:</span>
+          <span class="font-label-sm text-[10px] text-secondary font-mono" id="servo-bus-state">GPIO 18 [OK]</span>
+        </div>
+        <div class="flex-1 bg-surface-container/60 border border-outline-variant/30 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+          <span class="font-label-sm text-[10px] text-on-surface-variant">TAILRACE:</span>
+          <span class="font-label-sm text-[10px] text-primary-container font-mono" id="tailrace-flow-state">DRY</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Telemetry Status Row -->
+    <section class="flex items-center justify-between space-x-2 pt-0.5">
+      <div class="flex-1 bg-secondary/15 border border-secondary/40 rounded-xl px-2 py-2 flex items-center justify-center space-x-1 shadow-[0_0_12px_rgba(78,222,163,0.15)]" id="pill-pump1">
+        <span class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_6px_#4edea3]" id="dot-pump1"></span>
+        <span class="font-label-sm text-[10px] font-bold text-secondary truncate" id="text-pump1">PUMP 1: OFF</span>
+      </div>
+      <div class="flex-1 bg-surface-container-high/40 border border-outline-variant/30 rounded-xl px-2 py-2 flex items-center justify-center space-x-1 opacity-80" id="pill-pump2">
+        <span class="w-2 h-2 rounded-full bg-outline" id="dot-pump2"></span>
+        <span class="font-label-sm text-[10px] text-on-surface-variant font-medium truncate" id="text-pump2">PUMP 2: OFF</span>
+      </div>
+      <div class="flex-1 bg-surface-container-high/40 border border-outline-variant/30 rounded-xl px-2 py-2 flex items-center justify-center space-x-1" id="pill-flow">
+        <svg id="icon-flow" class="w-3.5 h-3.5 text-outline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+        <span class="font-label-sm text-[10px] font-bold text-outline truncate" id="text-flow">FLOW: DRY</span>
+      </div>
+    </section>
+
+    <!-- Hydro-Electric Turbine Demo Card (Home Quick View) -->
+    <section class="rounded-[20px] p-4 bg-white/[0.04] backdrop-blur-xl border border-primary-container/25 shadow-[0_0_24px_rgba(0,212,255,0.08)] space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-lg bg-primary-container/20 border border-primary-container/30 flex items-center justify-center text-primary-container">
+            <svg id="turbine-home-icon" class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v3m0 12v3m9-9h-3M6 12H3m14.364-6.364l-2.121 2.121M7.757 16.243l-2.121 2.121m12.728 0l-2.121-2.121M7.757 7.757L5.636 5.636M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+          </div>
+          <div>
+            <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider block">HYDRO-ELECTRIC GENERATOR DEMO</span>
+            <span class="font-headline-md text-sm font-bold text-on-surface">DC TURBINE MOTOR (GPIO 15 & 34)</span>
+          </div>
+        </div>
+        <span class="px-2 py-0.5 rounded-full font-label-sm text-[10px] font-bold bg-surface-container text-on-surface-variant border border-outline-variant/30" id="turbine-home-badge">STANDBY</span>
+      </div>
+
+      <!-- 4-Metric SCADA Grid -->
+      <div class="grid grid-cols-4 gap-2 text-center font-mono">
+        <div class="p-2 rounded-xl bg-surface-container-lowest/80 border border-outline-variant/25">
+          <div class="font-label-sm text-[9px] text-outline uppercase">VOLTAGE</div>
+          <div class="font-metric-display text-sm font-bold text-primary-container"><span id="turbine-volt-home">0.00</span><span class="text-[9px] text-outline font-normal">V</span></div>
+        </div>
+        <div class="p-2 rounded-xl bg-surface-container-lowest/80 border border-outline-variant/25">
+          <div class="font-label-sm text-[9px] text-outline uppercase">CURRENT</div>
+          <div class="font-metric-display text-sm font-bold text-secondary"><span id="turbine-curr-home">0.0</span><span class="text-[9px] text-outline font-normal">mA</span></div>
+        </div>
+        <div class="p-2 rounded-xl bg-surface-container-lowest/80 border border-outline-variant/25">
+          <div class="font-label-sm text-[9px] text-outline uppercase">POWER</div>
+          <div class="font-metric-display text-sm font-bold text-primary-fixed"><span id="turbine-power-home">0.0</span><span class="text-[9px] text-outline font-normal">mW</span></div>
+        </div>
+        <div class="p-2 rounded-xl bg-surface-container-lowest/80 border border-outline-variant/25">
+          <div class="font-label-sm text-[9px] text-outline uppercase">EST. RPM</div>
+          <div class="font-metric-display text-sm font-bold text-amber-300"><span id="turbine-rpm-home">0</span></div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-1">
+        <div class="text-[11px] font-label-sm text-on-surface-variant">Remote Demo Control</div>
+        <button id="turbine-quick-btn" onclick="ui.onTurbineQuickToggle()" class="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright border border-outline-variant/30 text-xs font-label-sm font-bold text-on-surface transition-all flex items-center space-x-1.5" type="button">
+          <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636a9 9 0 11-12.728 0M12 2v10"/></svg>
+          <span id="turbine-quick-btn-label">TURN ON DEMO</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 5-Minute History Canvas Chart -->
+    <section class="rounded-[20px] p-4 bg-white/[0.04] backdrop-blur-xl border border-outline-variant/30 shadow-[0_0_24px_rgba(0,0,0,0.4)]">
+      <div class="flex items-center justify-between mb-2">
+        <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider">WATER LEVEL HISTORY (5 MIN)</span>
+        <span class="font-label-sm text-[9px] text-primary-container font-mono">60 SAMPLES</span>
+      </div>
+      <canvas id="history-canvas" width="340" height="90" class="w-full h-24 rounded-lg bg-surface-container-lowest/80 border border-outline-variant/20"></canvas>
+    </section>
+
+    <!-- Recent Event Logs -->
+    <section class="rounded-[20px] p-4 bg-white/[0.04] backdrop-blur-xl border border-outline-variant/30 shadow-[0_0_24px_rgba(0,0,0,0.4)]">
+      <div class="flex items-center justify-between mb-2">
+        <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider">REAL-TIME SCADA EVENT LOG</span>
+        <button class="font-label-sm text-[10px] text-primary-container hover:underline" onclick="api.fetchLog()">REFRESH</button>
+      </div>
+      <div class="space-y-1.5 max-h-36 overflow-y-auto pr-1" id="log-list">
+        <div class="p-2 rounded bg-surface-container-lowest/60 border border-outline-variant/20 text-xs text-on-surface-variant font-mono">Connecting to telemetry bus...</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- TAB 2: CONTROL                                              -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <main class="tab-panel pt-16 px-3.5 space-y-4 pb-28" id="tab-control">
+    
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <h1 class="font-headline-lg font-bold tracking-tight text-on-surface text-xl">CONTROL</h1>
+          <span class="px-2 py-0.5 rounded text-[10px] font-label-sm bg-surface-container-high text-primary-container border border-primary-container/30 uppercase tracking-widest font-semibold">ACTUATOR BUS</span>
+        </div>
+        <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-secondary-container/10 border border-secondary/30 text-secondary" id="ctrl-interlock-badge">
+          <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+          <span class="font-label-sm text-[10px] font-medium tracking-tight">CLEAR</span>
+        </div>
+      </div>
+
+      <!-- Mode Toggle Switch -->
+      <div class="p-1 rounded-xl bg-surface-container border border-outline-variant/30 flex items-center gap-1">
+        <button class="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-emerald-500 text-slate-950 font-headline-md text-xs font-bold shadow-[0_0_16px_rgba(16,185,129,0.5)] transition-all" id="btn-mode-manual" onclick="ui.setMode('manual')" type="button">
+          <span class="h-2 w-2 rounded-full bg-slate-950" id="dot-mode-manual"></span>
+          <span>MANUAL MODE</span>
+        </button>
+        <button class="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-on-surface-variant font-label-md text-xs hover:text-on-surface transition-all opacity-60" id="btn-mode-auto" onclick="ui.setMode('auto')" type="button">
+          <span class="h-2 w-2 rounded-full bg-outline-variant" id="dot-mode-auto"></span>
+          <span>AUTO MODE</span>
+        </button>
+      </div>
+
+      <!-- Live Mode Description Indicator -->
+      <div id="mode-state-desc" class="px-3 py-2 rounded-xl bg-surface-container-lowest/80 border border-outline-variant/30 text-[10px] font-mono flex items-center justify-between text-slate-300">
+        <span id="mode-desc-text">MANUAL: Direct operator control over SG90 gate servo & actuators</span>
+        <span id="mode-desc-badge" class="px-2 py-0.5 rounded text-[9px] bg-emerald-950 text-emerald-400 font-bold border border-emerald-500/30 font-mono shrink-0">MANUAL ACTIVE</span>
+      </div>
+    </section>
+
+    <!-- Spillway Gate Alpha Control Card -->
+    <section class="p-5 rounded-[20px] bg-surface-container-low/95 border border-primary-container/30 shadow-[0_0_24px_rgba(0,212,255,0.12)] relative overflow-hidden">
+      <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary-container to-transparent"></div>
+      
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 rounded-lg bg-surface-container border border-primary-container/20 text-primary-container">
+            <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m-8-8h16m-4-6l-8 12m0-12l8 12"/></svg>
+          </div>
+          <div>
+            <h2 class="font-headline-md text-sm font-bold text-on-surface leading-tight">SPILLWAY GATE (SG90)</h2>
+            <span class="font-label-sm text-[10px] text-on-surface-variant">GPIO 18 • 500µs–2400µs PWM</span>
+          </div>
+        </div>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-label-sm font-semibold bg-secondary/10 text-secondary border border-secondary/30">ARMED</span>
+      </div>
+
+      <!-- Tactical SVG Circular Arc Dial & Rotating Needle -->
+      <div class="relative flex flex-col items-center justify-center my-3">
+        <div class="relative w-64 h-56 flex items-center justify-center">
+          <svg class="w-full h-full" viewBox="0 0 160 160">
+            <!-- Background Outer Track (240 deg sweep from 150 deg to 390 deg / 30 deg) -->
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#171e2e" stroke-width="10" stroke-linecap="round"
+                    stroke-dasharray="251.3 377" transform="rotate(150 80 80)"/>
+            
+            <!-- Active Cyan Arc Track -->
+            <circle id="svg-dial-arc" cx="80" cy="80" r="60" fill="none" stroke="#00d4ff" stroke-width="10" stroke-linecap="round"
+                    stroke-dasharray="0 377" transform="rotate(150 80 80)"
+                    class="filter drop-shadow-[0_0_10px_rgba(0,212,255,0.9)] transition-all duration-300 ease-out"/>
+
+            <!-- Rotating Needle Indicator -->
+            <g id="svg-dial-needle" transform="rotate(-120 80 80)" style="transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: 80px 80px;">
+              <!-- Needle Pointer Line -->
+              <line x1="80" y1="80" x2="80" y2="28" stroke="#00d4ff" stroke-width="3.5" stroke-linecap="round" filter="drop-shadow(0 0 6px #00d4ff)"/>
+              <!-- Glowing Tip Pip -->
+              <circle cx="80" cy="28" r="4.5" fill="#ffffff" filter="drop-shadow(0 0 8px #00d4ff)"/>
+              <!-- Center Hub -->
+              <circle cx="80" cy="80" r="10" fill="#0a0e1a" stroke="#00d4ff" stroke-width="3"/>
+              <circle cx="80" cy="80" r="4.5" fill="#00d4ff"/>
+            </g>
+          </svg>
+
+          <!-- Dial Center Digital Readout -->
+          <div class="absolute inset-0 flex flex-col items-center justify-center pt-8 pointer-events-none">
+            <span class="font-metric-display text-3xl font-black text-cyan-300 tracking-tighter drop-shadow-[0_0_14px_rgba(0,212,255,0.6)] font-mono" id="dial-angle-display">0.0°</span>
+            <span class="font-label-sm text-[10px] text-cyan-400 font-bold uppercase tracking-wider mt-0.5" id="dial-angle-sub">CLOSED</span>
+            <span class="font-label-sm text-[9px] text-slate-400 font-mono mt-0.5" id="dial-angle-actual">ACTUAL: 0.0°</span>
+          </div>
+
+          <!-- Tick Labels around dial -->
+          <span class="absolute left-6 bottom-4 font-mono font-bold text-[10px] text-slate-400">0°</span>
+          <span class="absolute left-10 top-6 font-mono font-bold text-[10px] text-slate-400">25°</span>
+          <span class="absolute top-1 font-mono font-black text-xs text-cyan-400 drop-shadow-[0_0_8px_#00d4ff]">50°</span>
+          <span class="absolute right-10 top-6 font-mono font-bold text-[10px] text-slate-400">75°</span>
+          <span class="absolute right-6 bottom-4 font-mono font-bold text-[10px] text-slate-400">100°</span>
+        </div>
+      </div>
+
+      <!-- Fine Actuator Slider -->
+      <div class="mt-4 space-y-2">
+        <div class="flex justify-between items-center font-label-sm text-xs text-on-surface-variant">
+          <span>ACTUATOR SLIDER</span>
+          <span class="text-primary-container font-semibold font-mono" id="slider-val-label">TARGET: 0°</span>
+        </div>
+        <div class="relative py-1">
+          <input class="w-full h-2 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary-container focus:outline-none" id="gate-range-input" max="100" min="0" oninput="ui.onGateSlider(this.value)" type="range" value="0"/>
+        </div>
+        <div class="flex justify-between font-label-sm text-[10px] text-on-surface-variant px-1 font-mono">
+          <span>0°</span>
+          <span>25°</span>
+          <span class="text-primary-container font-bold">50°</span>
+          <span>75°</span>
+          <span>100°</span>
+        </div>
+      </div>
+
+      <!-- Quick Action Preset Buttons (2x2 Grid) -->
+      <div class="grid grid-cols-2 gap-2 mt-4">
+        <button class="min-h-[44px] px-3 py-2 rounded-xl bg-white/[0.03] border border-outline-variant/40 hover:border-primary-container/50 active:scale-95 transition-all flex flex-col items-center justify-center" onclick="ui.setGateQuick(0)" type="button">
+          <span class="font-label-sm text-xs font-bold text-on-surface">CLOSE (0°)</span>
+          <span class="font-label-sm text-[9px] text-on-surface-variant">SEAL CREST</span>
+        </button>
+        <button class="min-h-[44px] px-3 py-2 rounded-xl bg-white/[0.03] border border-outline-variant/40 hover:border-primary-container/50 active:scale-95 transition-all flex flex-col items-center justify-center" onclick="ui.setGateQuick(25)" type="button">
+          <span class="font-label-sm text-xs font-bold text-on-surface">OPEN 25°</span>
+          <span class="font-label-sm text-[9px] text-on-surface-variant">BASE DRAW</span>
+        </button>
+        <button class="min-h-[44px] px-3 py-2 rounded-xl bg-primary-container/15 border-2 border-primary-container active:scale-95 transition-all shadow-[0_0_12px_rgba(0,212,255,0.25)] flex flex-col items-center justify-center" onclick="ui.setGateQuick(50)" type="button">
+          <span class="font-label-sm text-xs font-bold text-primary-container">OPEN 50°</span>
+          <span class="font-label-sm text-[9px] text-primary font-medium">MODERATE DRAW</span>
+        </button>
+        <button class="min-h-[44px] px-3 py-2 rounded-xl bg-red-950/40 border border-error/50 hover:border-error active:scale-95 transition-all flex flex-col items-center justify-center" onclick="ui.setGateQuick(100)" type="button">
+          <span class="font-label-sm text-xs font-bold text-error">FULL OPEN (100°)</span>
+          <span class="font-label-sm text-[9px] text-error/80 font-medium">MAX RELIEF</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Proximity Interlock Hazard Warning Banner (HC-SR04) -->
+    <section class="hidden p-4 rounded-[20px] bg-surface-container/70 border border-amber-500/40 shadow-[0_0_24px_rgba(245,158,11,0.18)] relative overflow-hidden space-y-3" id="proximity-hazard-card">
+      <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent"></div>
+      <div class="flex items-start gap-3">
+        <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 shrink-0">
+          <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <div class="space-y-0.5">
+          <div class="flex items-center gap-1.5">
+            <span class="font-label-sm text-[10px] font-bold uppercase tracking-wider text-amber-400">SAFETY TRIP ACTIVE</span>
+            <span class="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping"></span>
+          </div>
+          <h3 class="font-headline-md text-xs font-bold text-on-surface leading-tight" id="prox-hazard-title">GATE MOVEMENT BLOCKED: Obstacle Detected</h3>
+          <p class="font-label-sm text-[10px] text-on-surface-variant" id="prox-hazard-sub">HC-SR04 Proximity Sensor Interlock Active</p>
+        </div>
+      </div>
+
+      <!-- Override Button -->
+      <button class="w-full min-h-[48px] rounded-xl relative overflow-hidden border-2 border-red-500/60 bg-error-container/30 active:scale-98 transition-transform flex items-center justify-between px-4" onclick="ui.showOverrideDialog()" type="button">
+        <div class="absolute inset-0 hazard-stripe opacity-40"></div>
+        <div class="relative z-10 flex items-center gap-2">
+          <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <span class="font-label-sm text-xs font-bold text-on-error-container tracking-wider uppercase">OVERRIDE INTERLOCK</span>
+        </div>
+        <span class="relative z-10 font-label-sm text-[10px] px-2 py-0.5 rounded bg-error-container text-white font-mono border border-error/50">BYPASS</span>
+      </button>
+    </section>
+
+    <!-- Pump 1 Control Card (L298N Channel A - Reversible) -->
+    <section class="p-5 rounded-[20px] bg-surface-container-low/95 border border-outline-variant/30 space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.3)]">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 rounded-lg bg-secondary-container/20 text-secondary border border-secondary/30">
+            <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          </div>
+          <div>
+            <h3 class="font-headline-md text-sm font-bold text-on-surface leading-tight">PUMP 1 — REVERSIBLE</h3>
+            <span class="font-label-sm text-[10px] text-on-surface-variant">L298N IN1/IN2 (GPIO 16/17) • ENA (GPIO 4)</span>
+          </div>
+        </div>
+        <span class="px-2.5 py-1 rounded-full text-[10px] font-label-sm font-bold bg-surface-container text-on-surface-variant border border-outline-variant/40" id="pump1-status-badge">STANDBY</span>
+      </div>
+
+      <!-- Main Actuator Toggle Switch -->
+      <div class="p-3 rounded-xl bg-surface-container/70 border border-outline-variant/20 flex items-center justify-between gap-4">
+        <div>
+          <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider block">MAIN ACTUATOR</span>
+          <span class="font-label-md text-xs font-bold flex items-center gap-1.5 text-on-surface-variant" id="pump1-relay-state">RELAY IDLE</span>
+          <span class="font-label-sm text-[10px] text-slate-400 font-mono block mt-0.5" id="pump1-runtime-display">IDLE</span>
+        </div>
+        <!-- Real Animated Tactile Toggle Switch -->
+        <div class="flex items-center gap-2">
+          <button id="switch-pump1" onclick="ui.togglePump(1)" type="button" class="relative inline-flex h-8 w-16 shrink-0 cursor-pointer rounded-full border-2 border-slate-700 bg-slate-800 transition-colors duration-200 ease-in-out focus:outline-none shadow-inner" role="switch" aria-checked="false">
+            <span id="knob-pump1" class="pointer-events-none inline-block h-6 w-6 m-0.5 transform rounded-full bg-slate-400 shadow-md transition duration-200 ease-in-out translate-x-0"></span>
+          </button>
+          <!-- Compatibility buttons -->
+          <div class="hidden">
+            <button id="btn-pump1-off" onclick="ui.onPumpToggle(1, false)">OFF</button>
+            <button id="btn-pump1-on" onclick="ui.onPumpToggle(1, true)">ON</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flow Direction Controller (Reversible Pump 1) -->
+      <div class="p-3 rounded-xl bg-surface-container/70 border border-cyan-500/30 flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-400/40">
+            <svg id="pump1-dir-icon" class="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+            </svg>
+          </div>
+          <div>
+            <span class="font-label-sm text-[9px] text-slate-400 uppercase tracking-wider block">FLOW DIRECTION</span>
+            <span class="font-headline-md text-xs font-bold text-cyan-300" id="pump1-dir-text">FORWARD (INLET FILL)</span>
+          </div>
+        </div>
+        <div class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-cyan-500/40 text-xs font-mono">
+          <button id="btn-pump1-fwd" onclick="ui.setPumpDirection(1, false)" type="button" class="px-3 py-1 rounded-lg bg-cyan-500 text-slate-950 font-bold transition-all shadow-[0_0_8px_rgba(0,212,255,0.6)]">INLET</button>
+          <button id="btn-pump1-rev" onclick="ui.setPumpDirection(1, true)" type="button" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-all">DRAIN</button>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex justify-between items-center text-xs font-label-sm text-on-surface-variant">
+          <span>PWM SPEED</span>
+          <span class="font-bold text-primary-container font-mono" id="pump1-speed-label">100%</span>
+        </div>
+        <input class="w-full h-2 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary-container" id="pump1-speed-slider" max="100" min="0" oninput="ui.onPumpSpeed(1, this.value)" type="range" value="100"/>
+      </div>
+    </section>
+
+    <!-- Pump 2 Control Card (L298N Channel B) -->
+    <section class="p-5 rounded-[20px] bg-surface-container-low/95 border border-outline-variant/30 space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.3)]">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 rounded-lg bg-surface-container text-on-surface-variant border border-outline-variant/30">
+            <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          </div>
+          <div>
+            <h3 class="font-headline-md text-sm font-bold text-on-surface leading-tight">PUMP 2 — OUTLET</h3>
+            <span class="font-label-sm text-[10px] text-on-surface-variant">L298N IN1/IN2 (GPIO 19/21) • ENB (GPIO 22)</span>
+          </div>
+        </div>
+        <span class="px-2.5 py-1 rounded-full text-[10px] font-label-sm font-bold bg-surface-container text-on-surface-variant border border-outline-variant/40" id="pump2-status-badge">STANDBY</span>
+      </div>
+
+      <div class="p-3 rounded-xl bg-surface-container/70 border border-outline-variant/20 flex items-center justify-between gap-4">
+        <div>
+          <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider block">MAIN ACTUATOR</span>
+          <span class="font-label-md text-xs font-bold flex items-center gap-1.5 text-on-surface-variant" id="pump2-relay-state">RELAY IDLE</span>
+          <span class="font-label-sm text-[10px] text-slate-400 font-mono block mt-0.5" id="pump2-runtime-display">IDLE</span>
+        </div>
+        <!-- Real Animated Tactile Toggle Switch -->
+        <div class="flex items-center gap-2">
+          <button id="switch-pump2" onclick="ui.togglePump(2)" type="button" class="relative inline-flex h-8 w-16 shrink-0 cursor-pointer rounded-full border-2 border-slate-700 bg-slate-800 transition-colors duration-200 ease-in-out focus:outline-none shadow-inner" role="switch" aria-checked="false">
+            <span id="knob-pump2" class="pointer-events-none inline-block h-6 w-6 m-0.5 transform rounded-full bg-slate-400 shadow-md transition duration-200 ease-in-out translate-x-0"></span>
+          </button>
+          <!-- Compatibility buttons -->
+          <div class="hidden">
+            <button id="btn-pump2-off" onclick="ui.onPumpToggle(2, false)">OFF</button>
+            <button id="btn-pump2-on" onclick="ui.onPumpToggle(2, true)">ON</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex justify-between items-center text-xs font-label-sm text-on-surface-variant">
+          <span>PWM SPEED</span>
+          <span class="font-bold text-primary-container font-mono" id="pump2-speed-label">100%</span>
+        </div>
+        <input class="w-full h-2 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary-container" id="pump2-speed-slider" max="100" min="0" oninput="ui.onPumpSpeed(2, this.value)" type="range" value="100"/>
+      </div>
+    </section>
+
+    <!-- Turbine Demo Remote Control Card -->
+    <section class="p-5 rounded-[20px] bg-surface-container-low/95 border border-primary-container/30 space-y-4 shadow-[0_4px_24px_rgba(0,212,255,0.08)]">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-primary-container/20 text-primary-container border border-primary-container/30 flex items-center justify-center">
+            <svg id="turbine-ctrl-icon" class="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v3m0 12v3m9-9h-3M6 12H3m14.364-6.364l-2.121 2.121M7.757 16.243l-2.121 2.121m12.728 0l-2.121-2.121M7.757 7.757L5.636 5.636M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+          </div>
+          <div>
+            <h3 class="font-headline-md text-sm font-bold text-on-surface leading-tight">HYDRO-ELECTRIC TURBINE DEMO</h3>
+            <span class="font-label-sm text-[10px] text-on-surface-variant">PWM OUT (GPIO 15) • VOLTAGE SENSE (GPIO 34 ADC1)</span>
+          </div>
+        </div>
+        <span class="px-2.5 py-1 rounded-full text-[10px] font-label-sm font-bold bg-surface-container text-on-surface-variant border border-outline-variant/40" id="turbine-ctrl-badge">STANDBY</span>
+      </div>
+
+      <!-- Live Electrical Telemetry Display -->
+      <div class="grid grid-cols-4 gap-2 text-center font-mono p-2.5 rounded-xl bg-surface-container/70 border border-outline-variant/20">
+        <div>
+          <span class="font-label-sm text-[9px] text-outline uppercase block">VOLTAGE</span>
+          <span class="font-metric-display text-sm font-bold text-primary-container" id="turbine-ctrl-volt">0.00 V</span>
+        </div>
+        <div>
+          <span class="font-label-sm text-[9px] text-outline uppercase block">CURRENT</span>
+          <span class="font-metric-display text-sm font-bold text-secondary" id="turbine-ctrl-curr">0.0 mA</span>
+        </div>
+        <div>
+          <span class="font-label-sm text-[9px] text-outline uppercase block">POWER</span>
+          <span class="font-metric-display text-sm font-bold text-primary-fixed" id="turbine-ctrl-power">0.0 mW</span>
+        </div>
+        <div>
+          <span class="font-label-sm text-[9px] text-outline uppercase block">EST. RPM</span>
+          <span class="font-metric-display text-sm font-bold text-amber-300" id="turbine-ctrl-rpm">0</span>
+        </div>
+      </div>
+
+      <!-- Relay / Actuator Engage Switch -->
+      <div class="p-3 rounded-xl bg-surface-container/70 border border-outline-variant/20 flex items-center justify-between gap-4">
+        <div>
+          <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider block">MAIN ACTUATOR</span>
+          <span class="font-label-md text-xs font-bold flex items-center gap-1.5 text-on-surface-variant" id="turbine-relay-state">RELAY IDLE</span>
+          <span class="font-label-sm text-[10px] text-slate-400 font-mono block mt-0.5" id="turbine-runtime-display">IDLE</span>
+        </div>
+        <!-- Real Animated Tactile Toggle Switch -->
+        <div class="flex items-center gap-2">
+          <button id="switch-turbine" onclick="ui.toggleTurbine()" type="button" class="relative inline-flex h-8 w-16 shrink-0 cursor-pointer rounded-full border-2 border-slate-700 bg-slate-800 transition-colors duration-200 ease-in-out focus:outline-none shadow-inner" role="switch" aria-checked="false">
+            <span id="knob-turbine" class="pointer-events-none inline-block h-6 w-6 m-0.5 transform rounded-full bg-slate-400 shadow-md transition duration-200 ease-in-out translate-x-0"></span>
+          </button>
+          <!-- Compatibility buttons -->
+          <div class="hidden">
+            <button id="btn-turbine-off" onclick="ui.onTurbineToggle(false)">OFF</button>
+            <button id="btn-turbine-on" onclick="ui.onTurbineToggle(true)">ON</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Speed Control Slider & Presets -->
+      <div class="space-y-2">
+        <div class="flex justify-between items-center text-xs font-label-sm text-on-surface-variant">
+          <span>GENERATOR PWM SPEED</span>
+          <span class="font-bold text-primary-container font-mono" id="turbine-speed-label">0%</span>
+        </div>
+        <input class="w-full h-2 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary-container" id="turbine-speed-slider" max="100" min="0" oninput="ui.onTurbineSpeed(this.value)" type="range" value="0"/>
+        <div class="flex justify-between pt-1 text-[10px] font-label-sm text-outline">
+          <button type="button" class="px-2 py-0.5 rounded bg-surface-container border border-outline-variant/20 hover:text-primary-container" onclick="ui.setTurbinePreset(25)">25%</button>
+          <button type="button" class="px-2 py-0.5 rounded bg-surface-container border border-outline-variant/20 hover:text-primary-container" onclick="ui.setTurbinePreset(50)">50%</button>
+          <button type="button" class="px-2 py-0.5 rounded bg-surface-container border border-outline-variant/20 hover:text-primary-container" onclick="ui.setTurbinePreset(75)">75%</button>
+          <button type="button" class="px-2 py-0.5 rounded bg-surface-container border border-outline-variant/20 hover:text-primary-container" onclick="ui.setTurbinePreset(100)">100%</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- TAB 3: SENSORS                                              -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <main class="tab-panel pt-16 px-3.5 space-y-4 pb-28" id="tab-sensors">
+    
+    <section class="flex flex-col space-y-1.5 pt-1">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="font-headline-lg font-bold text-on-surface tracking-tight uppercase text-xl">SENSORS</h2>
+          <p class="font-label-sm text-[10px] text-outline tracking-widest uppercase">FULL TELEMETRY MATRIX</p>
+        </div>
+        <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-surface-container-high border border-outline-variant/40">
+          <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span class="font-label-sm text-[10px] text-primary-container tracking-wider font-mono">ESP32 GPIO BUS</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARD 1: Water Level Probe Array -->
+    <section class="p-4 rounded-[20px] bg-surface-container/60 backdrop-blur-xl border border-outline-variant/30 relative overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+      <div class="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-primary-container/40 to-transparent"></div>
+      
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2m-20-4c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg>
+          <h3 class="font-label-sm text-xs text-on-surface-variant font-semibold tracking-wider uppercase">WATER LEVEL PROBE ARRAY</h3>
+        </div>
+        <span class="px-2 py-0.5 rounded-full font-label-sm text-[10px] bg-secondary-container/20 text-secondary border border-secondary/30" id="sensors-probe-badge">PROBE STATUS: OK</span>
+      </div>
+
+      <div class="grid grid-cols-12 gap-3 items-center">
+        <!-- 5-Wire SCADA Wire Rack List -->
+        <div class="col-span-9 flex flex-col space-y-2">
+          <!-- FLOW Wire -->
+          <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-surface-container-high/40 border border-outline-variant/20" id="wire-row-flow">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-outline-variant" id="dot-wire-flow"></span>
+              <span class="font-label-sm text-xs text-on-surface">FLOW WIRE (GPIO 13)</span>
+            </div>
+            <span class="px-2 py-0.5 rounded font-label-sm text-[10px] bg-surface-variant text-outline border border-outline-variant/30" id="state-wire-flow">DRY</span>
+          </div>
+          <!-- DAM WARNING Wire -->
+          <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-surface-container-high/40 border border-outline-variant/20" id="wire-row-warning">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-outline-variant" id="dot-wire-warning"></span>
+              <span class="font-label-sm text-xs text-outline">DAM WARNING (GPIO 14)</span>
+            </div>
+            <span class="px-2 py-0.5 rounded font-label-sm text-[10px] bg-surface-variant text-outline border border-outline-variant/30" id="state-wire-warning">DRY</span>
+          </div>
+          <!-- HIGH Wire -->
+          <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-surface-container-high/40 border border-outline-variant/20" id="wire-row-high">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-outline-variant" id="dot-wire-high"></span>
+              <span class="font-label-sm text-xs text-on-surface">HIGH PROBE (GPIO 27)</span>
+            </div>
+            <span class="px-2 py-0.5 rounded font-label-sm text-[10px] bg-surface-variant text-outline border border-outline-variant/30" id="state-wire-high">DRY</span>
+          </div>
+          <!-- MEDIUM Wire -->
+          <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-surface-container-high/40 border border-outline-variant/20" id="wire-row-medium">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-outline-variant" id="dot-wire-medium"></span>
+              <span class="font-label-sm text-xs text-on-surface">MEDIUM PROBE (GPIO 26)</span>
+            </div>
+            <span class="px-2 py-0.5 rounded font-label-sm text-[10px] bg-surface-variant text-outline border border-outline-variant/30" id="state-wire-medium">DRY</span>
+          </div>
+          <!-- LOW Wire -->
+          <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-surface-container-high/40 border border-outline-variant/20" id="wire-row-low">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-primary-container shadow-[0_0_6px_#00d4ff]" id="dot-wire-low"></span>
+              <span class="font-label-sm text-xs text-on-surface">LOW PROBE (GPIO 25)</span>
+            </div>
+            <span class="px-2 py-0.5 rounded font-label-sm text-[10px] bg-primary-container/15 text-primary-container border border-primary-container/30" id="state-wire-low">WET</span>
+          </div>
+        </div>
+
+        <!-- Vertical Liquid Level Column -->
+        <div class="col-span-3 h-full flex flex-col items-center justify-between py-1">
+          <div class="w-8 h-44 rounded-xl bg-surface-container-lowest border border-outline-variant/50 relative overflow-hidden flex flex-col justify-end p-0.5">
+            <div class="w-full rounded-lg bg-gradient-to-t from-primary-container to-primary-fixed shadow-[0_0_14px_rgba(0,212,255,0.4)] transition-all duration-300" id="sensors-vertical-bar" style="height: 25%;">
+              <div class="w-full h-1 bg-white/70"></div>
+            </div>
+          </div>
+          <span class="font-label-sm text-[11px] text-primary-container mt-1.5 font-bold font-mono" id="sensors-pct-label">25%</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARD 2: MQ-135 Gas Sensor -->
+    <section class="p-4 rounded-[20px] bg-surface-container/60 backdrop-blur-xl border border-outline-variant/30 relative overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+      <div class="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-tertiary-container/40 to-transparent"></div>
+      
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l3 3m0 0l-3 3m3-3H7a4 4 0 000 8h2m8 4l2-2m0 0l-2-2m2 2H9"/></svg>
+          <h3 class="font-label-sm text-xs text-on-surface-variant font-semibold tracking-wider uppercase">ATMOSPHERIC / MQ-135 GAS</h3>
+        </div>
+        <div class="flex items-center space-x-1.5">
+          <span class="px-2 py-0.5 rounded-full font-label-sm text-[10px] bg-secondary-container/20 text-secondary border border-secondary/30" id="gas-disconnect-pill">CONNECTED</span>
+          <span class="px-2 py-0.5 rounded-full font-label-sm text-[10px] bg-secondary-container/20 text-secondary border border-secondary/30" id="mq-warmup-pill">READY</span>
+          <span class="px-2 py-0.5 rounded-full font-label-sm text-[10px] bg-secondary-container/20 text-secondary border border-secondary/30" id="mq-level-pill">NORMAL</span>
+        </div>
+      </div>
+
+      <!-- Semi-Circular Arc Gauge SVG Representation (Range 0 - 4095) -->
+      <div class="flex flex-col items-center relative py-2">
+        <svg class="w-full max-w-[240px] overflow-visible" viewBox="0 0 240 135">
+          <!-- Background Arc Base Track -->
+          <path d="M 25 120 A 95 95 0 0 1 215 120" fill="none" stroke="#171b28" stroke-linecap="round" stroke-width="14"/>
+          <!-- Safe Zone 0 - 1500 (Green) -->
+          <path d="M 25 120 A 95 95 0 0 1 100 33" fill="none" stroke="#00a572" stroke-linecap="round" stroke-opacity="0.3" stroke-width="14"/>
+          <!-- Warning Zone 1500 - 2800 (Amber) -->
+          <path d="M 103 31 A 95 95 0 0 1 175 58" fill="none" stroke="#ffaea8" stroke-opacity="0.3" stroke-width="14"/>
+          <!-- Danger Zone 2800 - 4095 (Red) -->
+          <path d="M 178 61 A 95 95 0 0 1 215 120" fill="none" stroke="#ef4444" stroke-linecap="round" stroke-opacity="0.3" stroke-width="14"/>
+          
+          <!-- Needle / Indicator Pin -->
+          <g id="svg-gas-needle" transform="translate(120, 120) rotate(-75)" style="transition: transform 0.4s ease-out;">
+            <line stroke="#dfe2f3" stroke-linecap="round" stroke-width="2.5" x1="0" x2="0" y1="0" y2="-90"/>
+            <circle cx="0" cy="-90" fill="#00d4ff" r="4.5" stroke="#dfe2f3" stroke-width="1.5"/>
+            <circle cx="0" cy="0" fill="#0a0e1a" r="7" stroke="#dfe2f3" stroke-width="2.5"/>
+          </g>
+        </svg>
+
+        <div class="w-full flex justify-between px-4 font-label-sm text-[10px] text-outline font-mono -mt-1">
+          <span>0</span>
+          <span class="text-secondary font-semibold" id="gas-now-marker">410 [NOW]</span>
+          <span class="text-tertiary-fixed">1500 WARN</span>
+          <span class="text-error">2800 DANGER</span>
+          <span>4095</span>
+        </div>
+      </div>
+
+      <div class="mt-2 pt-2 border-t border-outline-variant/30 flex flex-col items-center">
+        <div class="font-metric-display text-2xl text-secondary font-bold tracking-tight font-mono" id="gas-metric-large">
+          410 <span class="font-label-md text-xs text-outline font-normal">raw ADC</span>
+        </div>
+        <div class="w-full grid grid-cols-3 gap-2 mt-2 text-center font-mono">
+          <div class="p-1.5 rounded bg-surface-container-lowest/60 border border-outline-variant/20">
+            <div class="font-label-sm text-[9px] text-outline">PIN</div>
+            <div class="font-label-md text-xs text-on-surface font-semibold">GPIO 35</div>
+          </div>
+          <div class="p-1.5 rounded bg-surface-container-lowest/60 border border-outline-variant/20">
+            <div class="font-label-sm text-[9px] text-outline">HEATER</div>
+            <div class="font-label-md text-xs text-secondary font-semibold">5V 160mA</div>
+          </div>
+          <div class="p-1.5 rounded bg-surface-container-lowest/60 border border-outline-variant/20">
+            <div class="font-label-sm text-[9px] text-outline">DIVIDER</div>
+            <div class="font-label-md text-xs text-on-surface font-semibold">1kΩ/2kΩ</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARD 3: HC-SR04 Proximity Radar -->
+    <section class="p-4 rounded-[20px] bg-surface-container/60 backdrop-blur-xl border border-primary-container/20 relative overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+      <div class="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-primary-container/50 to-transparent"></div>
+      
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 12l6-3"/></svg>
+          <h3 class="font-label-sm text-xs text-on-surface-variant font-semibold tracking-wider uppercase">ULTRASONIC PROXIMITY (HC-SR04)</h3>
+        </div>
+        <div class="flex items-center space-x-1.5">
+          <span class="px-2 py-0.5 rounded-full font-label-sm text-[10px] bg-secondary-container/20 text-secondary border border-secondary/30" id="us-disconnect-pill">CONNECTED</span>
+          <span class="px-2 py-0.5 rounded-full font-label-sm text-[10px] bg-primary-container/15 text-primary-container border border-primary-container/30" id="radar-zone-pill">CLEAR (&gt;40cm)</span>
+        </div>
+      </div>
+
+      <!-- Radar Circular Display -->
+      <div class="relative w-44 h-44 mx-auto my-2 rounded-full bg-surface-container-lowest border border-outline-variant/40 flex items-center justify-center overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
+        <div class="absolute w-40 h-40 rounded-full border border-outline-variant/30"></div>
+        <div class="absolute w-24 h-24 rounded-full border border-tertiary-container/40"></div>
+        <div class="absolute w-12 h-12 rounded-full border border-dashed border-error/50"></div>
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div class="w-full h-[1px] bg-outline-variant/30"></div>
+        </div>
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div class="h-full w-[1px] bg-outline-variant/30"></div>
+        </div>
+        
+        <!-- Rotating Sweep Line -->
+        <div class="absolute inset-0 radar-sweep-anim pointer-events-none">
+          <div class="w-1/2 h-1/2 bg-gradient-to-tr from-primary-container/20 to-transparent rounded-tl-full origin-bottom-right absolute top-0 left-0"></div>
+          <div class="w-1/2 h-[1.5px] bg-primary-container origin-right absolute top-1/2 left-0 shadow-[0_0_8px_#00d4ff]"></div>
+        </div>
+
+        <!-- Target Blip -->
+        <div class="absolute w-3 h-3 rounded-full bg-primary-container z-10 shadow-[0_0_10px_#00d4ff] transition-all duration-300" id="radar-blip-target" style="top: 25px; right: 35px;"></div>
+        <div class="w-2.5 h-2.5 rounded-full bg-primary-container z-20"></div>
+      </div>
+
+      <div class="flex flex-col items-center mt-2 text-center">
+        <div class="font-metric-display text-2xl text-primary-container font-bold tracking-tight font-mono" id="radar-dist-metric">
+          52.4 <span class="font-label-md text-xs text-outline font-normal">cm</span>
+        </div>
+        <div class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider mt-0.5">GATE APERTURE CLEARANCE • ECHO GPIO 33</div>
+      </div>
+    </section>
+
+    <!-- CARD 4: System Health & Diagnostics -->
+    <section class="p-4 rounded-[20px] bg-surface-container/60 backdrop-blur-xl border border-outline-variant/30 relative overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+      <div class="flex items-center space-x-2 mb-3">
+        <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 9h6v6H9zM9 1v3m6-3v3M9 20v3m6-3v3M1 9h3m-3 6h3M20 9h3m-3 6h3"/></svg>
+        <h3 class="font-label-sm text-xs text-on-surface-variant font-semibold tracking-wider uppercase">SYSTEM HEALTH &amp; DIAGNOSTICS</h3>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5 font-mono">
+        <div class="p-2.5 rounded-xl bg-surface-container-lowest/80 border border-outline-variant/20">
+          <span class="font-label-sm text-[9px] text-outline block">UPTIME</span>
+          <span class="font-label-lg text-sm text-on-surface font-bold" id="sys-uptime-val">00:00:00</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-surface-container-lowest/80 border border-outline-variant/20">
+          <span class="font-label-sm text-[9px] text-outline block">FREE HEAP</span>
+          <span class="font-label-lg text-sm text-primary-container font-bold" id="sys-heap-val">214 KB</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-surface-container-lowest/80 border border-outline-variant/20">
+          <span class="font-label-sm text-[9px] text-outline block">WS CLIENTS</span>
+          <span class="font-label-lg text-sm text-secondary font-bold" id="sys-clients-val">1 conn</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-surface-container-lowest/80 border border-outline-variant/20">
+          <span class="font-label-sm text-[9px] text-outline block">FW VERSION</span>
+          <span class="font-label-lg text-sm text-on-surface font-bold" id="sys-fw-val">v1.0.0</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- TAB 4: SYSTEM (SETTINGS & WIRING TEST)                      -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <main class="tab-panel pt-16 px-3.5 space-y-4 pb-28" id="tab-system">
+    
+    <section class="pt-2 pb-1">
+      <div class="flex items-center gap-2 mb-1">
+        <div class="h-4 w-1 bg-primary-container rounded-full"></div>
+        <span class="font-label-sm text-[10px] tracking-widest text-primary uppercase">TELEMETRY RIG &amp; CALIBRATION</span>
+      </div>
+      <h1 class="font-headline-lg font-bold text-on-surface tracking-tight text-xl">SETTINGS &amp; SYSTEM CONFIG</h1>
+      <p class="font-label-sm text-[10px] text-on-surface-variant tracking-wider mt-0.5">CALIBRATION, THRESHOLDS &amp; LIVE PIN DIAGNOSTICS</p>
+    </section>
+
+    <!-- SECTION: FEATURED WIRING TEST — LIVE SENSOR CHECK -->
+    <section class="bg-surface-container-low/90 backdrop-blur-2xl border-2 border-amber-500/50 rounded-xl p-4 shadow-[0_0_30px_rgba(245,158,11,0.18)] relative overflow-hidden">
+      <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500/30 via-amber-400 to-amber-500/30"></div>
+      
+      <div class="flex items-center justify-between pb-3 border-b border-outline-variant/30 mb-3">
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <div>
+            <h2 class="font-headline-md text-sm font-bold text-on-surface tracking-wide">WIRING TEST — LIVE SENSOR CHECK</h2>
+            <span class="font-label-sm text-amber-300/90 font-mono tracking-widest text-[9px] block">HARDWARE PINOUT DIAGNOSTIC BUS</span>
+          </div>
+        </div>
+        <span class="font-label-sm text-[9px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/40 font-bold uppercase tracking-wider">
+          LIVE BUS
+        </span>
+      </div>
+
+      <div class="bg-amber-950/30 border border-amber-500/30 rounded-lg p-2.5 mb-3 flex items-center space-x-2.5">
+        <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
+        <p class="font-label-sm text-[11px] text-amber-200">
+          Dip each wire in water. Dot turns <strong class="text-primary-container font-semibold">cyan</strong> when <strong class="text-primary-container font-semibold">WET</strong>.
+        </p>
+      </div>
+
+      <!-- 3-Column Grid of 5 Contact Wires -->
+      <div class="grid grid-cols-3 gap-2">
+        <div class="bg-black/40 border border-outline-variant/30 rounded-lg p-2 flex flex-col items-center text-center space-y-1" id="wt-card-low">
+          <span class="font-label-sm text-[9px] text-on-surface-variant font-bold">LOW (GPIO 25)</span>
+          <div class="w-5 h-5 rounded-full border border-primary-container/50 bg-primary-container/20 flex items-center justify-center">
+            <div class="w-2 h-2 rounded-full bg-primary-container shadow-[0_0_6px_#00d4ff]" id="wt-dot-low"></div>
+          </div>
+          <span class="font-label-sm text-primary-container font-mono text-[9px]" id="wt-text-low">WET</span>
+        </div>
+
+        <div class="bg-black/40 border border-outline-variant/30 rounded-lg p-2 flex flex-col items-center text-center space-y-1" id="wt-card-medium">
+          <span class="font-label-sm text-[9px] text-on-surface-variant font-bold">MED (GPIO 26)</span>
+          <div class="w-5 h-5 rounded-full border border-outline/50 bg-outline/20 flex items-center justify-center">
+            <div class="w-2 h-2 rounded-full bg-outline-variant" id="wt-dot-medium"></div>
+          </div>
+          <span class="font-label-sm text-outline font-mono text-[9px]" id="wt-text-medium">DRY</span>
+        </div>
+
+        <div class="bg-black/40 border border-outline-variant/30 rounded-lg p-2 flex flex-col items-center text-center space-y-1" id="wt-card-high">
+          <span class="font-label-sm text-[9px] text-on-surface-variant font-bold">HIGH (GPIO 27)</span>
+          <div class="w-5 h-5 rounded-full border border-outline/50 bg-outline/20 flex items-center justify-center">
+            <div class="w-2 h-2 rounded-full bg-outline-variant" id="wt-dot-high"></div>
+          </div>
+          <span class="font-label-sm text-outline font-mono text-[9px]" id="wt-text-high">DRY</span>
+        </div>
+
+        <div class="bg-black/40 border border-outline-variant/30 rounded-lg p-2 flex flex-col items-center text-center space-y-1" id="wt-card-warning">
+          <span class="font-label-sm text-[9px] text-on-surface-variant font-bold">WARN (GPIO 14)</span>
+          <div class="w-5 h-5 rounded-full border border-outline/50 bg-outline/20 flex items-center justify-center">
+            <div class="w-2 h-2 rounded-full bg-outline-variant" id="wt-dot-warning"></div>
+          </div>
+          <span class="font-label-sm text-outline font-mono text-[9px]" id="wt-text-warning">DRY</span>
+        </div>
+
+        <div class="bg-black/40 border border-outline-variant/30 rounded-lg p-2 flex flex-col items-center text-center space-y-1" id="wt-card-flow">
+          <span class="font-label-sm text-[9px] text-on-surface-variant font-bold">FLOW (GPIO 13)</span>
+          <div class="w-5 h-5 rounded-full border border-outline/50 bg-outline/20 flex items-center justify-center">
+            <div class="w-2 h-2 rounded-full bg-outline-variant" id="wt-dot-flow"></div>
+          </div>
+          <span class="font-label-sm text-outline font-mono text-[9px]" id="wt-text-flow">DRY</span>
+        </div>
+
+        <div class="bg-black/40 border border-outline-variant/30 rounded-lg p-2 flex flex-col items-center text-center space-y-1 opacity-70">
+          <span class="font-label-sm text-[9px] text-outline font-bold">SERVO PIN</span>
+          <span class="font-label-sm text-[10px] text-secondary font-mono mt-1">GPIO 18</span>
+          <span class="font-label-sm text-[9px] text-outline">50Hz PWM</span>
+        </div>
+      </div>
+
+      <!-- Live Readout Sub-Panel -->
+      <div class="mt-3 pt-3 border-t border-outline-variant/30 space-y-2">
+        <div class="bg-black/50 border border-outline-variant/30 rounded-lg p-2 flex items-center justify-between font-mono">
+          <div class="flex items-center space-x-2">
+            <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16M8 6v4m4-4v2m4-2v4"/></svg>
+            <span class="font-label-sm text-xs text-on-surface">HC-SR04 Distance:</span>
+          </div>
+          <span class="font-label-md text-xs font-bold text-primary-container" id="wt-ultrasonic-val">52.4 cm</span>
+        </div>
+        <div class="bg-black/50 border border-outline-variant/30 rounded-lg p-2 flex items-center justify-between font-mono">
+          <div class="flex items-center space-x-2">
+            <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l3 3m0 0l-3 3m3-3H7a4 4 0 000 8h2m8 4l2-2m0 0l-2-2m2 2H9"/></svg>
+            <span class="font-label-sm text-xs text-on-surface">MQ-135 Gas (GPIO 35):</span>
+          </div>
+          <span class="font-label-md text-xs font-bold text-amber-400" id="wt-gas-val">410 ADC</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: NETWORK CONFIGURATION -->
+    <section class="bg-white/[0.04] backdrop-blur-xl border border-outline-variant/30 rounded-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+      <div class="flex items-center justify-between pb-3 border-b border-outline-variant/20 mb-3">
+        <div class="flex items-center space-x-2">
+          <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/></svg>
+          <h2 class="font-headline-md text-sm font-bold text-on-surface tracking-wide">NETWORK CONFIGURATION</h2>
+        </div>
+        <span class="font-label-sm text-[9px] px-2 py-0.5 rounded bg-surface-container-high/80 text-primary border border-outline-variant/40">AP MODE</span>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block font-label-sm text-[10px] text-on-surface-variant uppercase mb-1">Wi-Fi AP SSID</label>
+          <input class="w-full bg-black/40 border border-outline-variant/40 rounded-lg px-3 py-2 font-label-md text-xs text-on-surface focus:outline-none focus:border-primary-container" id="ssid-input" type="text" value="AquaGuard-Dam"/>
+        </div>
+        <div>
+          <label class="block font-label-sm text-[10px] text-on-surface-variant uppercase mb-1">Wi-Fi Password</label>
+          <input class="w-full bg-black/40 border border-outline-variant/40 rounded-lg px-3 py-2 font-label-md text-xs text-on-surface focus:outline-none focus:border-primary-container" id="pass-input" type="password" value="dam12345"/>
+        </div>
+        <button class="w-full py-2.5 px-4 rounded-lg bg-primary-container text-surface-container-lowest font-label-md text-xs font-bold tracking-wider uppercase flex items-center justify-center space-x-2 shadow-[0_0_16px_rgba(0,212,255,0.35)] active:scale-95 transition-all" onclick="ui.saveNetwork()" type="button">
+          <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+          <span>SAVE NETWORK SETTINGS</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- SECTION: TELEMETRY THRESHOLDS -->
+    <section class="bg-white/[0.04] backdrop-blur-xl border border-outline-variant/30 rounded-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+      <div class="flex items-center justify-between pb-3 border-b border-outline-variant/20 mb-3">
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+          <h2 class="font-headline-md text-sm font-bold text-on-surface tracking-wide">TELEMETRY THRESHOLDS</h2>
+        </div>
+        <span class="font-label-sm text-[9px] px-2 py-0.5 rounded bg-surface-container-high/80 text-on-surface-variant border border-outline-variant/40">INTERLOCKS</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 font-mono">
+        <div class="bg-surface-container-lowest/60 border border-outline-variant/30 rounded-lg p-2">
+          <label class="block font-label-sm text-[9px] text-on-surface-variant uppercase">Gas Warning</label>
+          <input class="w-full bg-transparent font-label-md text-xs text-on-surface font-bold focus:outline-none border-b border-outline-variant/60 focus:border-primary-container py-0.5" id="gas-warn-input" type="number" value="1500"/>
+        </div>
+        <div class="bg-surface-container-lowest/60 border border-outline-variant/30 rounded-lg p-2">
+          <label class="block font-label-sm text-[9px] text-tertiary-container uppercase">Gas Danger</label>
+          <input class="w-full bg-transparent font-label-md text-xs text-tertiary font-bold focus:outline-none border-b border-outline-variant/60 focus:border-tertiary-container py-0.5" id="gas-danger-input" type="number" value="2800"/>
+        </div>
+        <div class="bg-surface-container-lowest/60 border border-outline-variant/30 rounded-lg p-2">
+          <label class="block font-label-sm text-[9px] text-on-surface-variant uppercase">Prox Clear (cm)</label>
+          <input class="w-full bg-transparent font-label-md text-xs text-on-surface font-bold focus:outline-none border-b border-outline-variant/60 focus:border-primary-container py-0.5" id="prox-clear-input" type="number" value="40"/>
+        </div>
+        <div class="bg-surface-container-lowest/60 border border-outline-variant/30 rounded-lg p-2">
+          <label class="block font-label-sm text-[9px] text-on-surface-variant uppercase">Prox Warn (cm)</label>
+          <input class="w-full bg-transparent font-label-md text-xs text-on-surface font-bold focus:outline-none border-b border-outline-variant/60 focus:border-primary-container py-0.5" id="prox-warn-input" type="number" value="15"/>
+        </div>
+        <div class="bg-surface-container-lowest/60 border border-outline-variant/30 rounded-lg p-2 col-span-2">
+          <label class="block font-label-sm text-[9px] text-on-surface-variant uppercase">Flow Confirmation Timeout (sec)</label>
+          <input class="w-full bg-transparent font-label-md text-xs text-on-surface font-bold focus:outline-none border-b border-outline-variant/60 focus:border-primary-container py-0.5" id="flow-timeout-input" type="number" value="5"/>
+        </div>
+      </div>
+
+      <button class="mt-3 w-full py-2.5 px-4 rounded-lg bg-white/[0.04] border border-primary-container/30 text-primary-container hover:bg-primary-container/10 font-label-md text-xs font-semibold tracking-wider uppercase flex items-center justify-center space-x-2 transition-all active:scale-95" onclick="ui.saveThresholds()" type="button">
+        <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <span>UPDATE THRESHOLDS</span>
+      </button>
+    </section>
+
+    <!-- SECTION: RESTART CONTROLLER -->
+    <section class="bg-white/[0.04] backdrop-blur-xl border border-outline-variant/30 rounded-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+      <button class="w-full py-3 px-4 rounded-lg bg-error-container/40 border border-error text-tertiary-container hover:bg-error-container/60 font-label-md text-xs font-bold tracking-wider uppercase flex items-center justify-center space-x-2 shadow-[0_0_20px_rgba(239,68,68,0.25)] active:scale-95 transition-all" onclick="ui.confirmRestart()" type="button">
+        <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        <span>RESTART ESP32 CONTROLLER</span>
+      </button>
+    </section>
+
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- FLOATING MODERN DOCKED NAVIGATION (Clean Mobile SCADA)    -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <nav class="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-[420px] z-50 flex justify-around items-center h-16 px-2 bg-[#0a0e1a] rounded-2xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.85),0_0_20px_rgba(0,212,255,0.15)]">
+    <!-- Overview (Home) -->
+    <button class="flex-1 flex flex-col items-center justify-center py-1.5 text-cyan-400 drop-shadow-[0_0_8px_rgba(0,212,255,0.6)] active:scale-95 transition-all duration-150 min-h-[48px] nav-btn font-bold" id="nav-btn-overview" onclick="ui.switchTab('overview')" type="button">
+      <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      </svg>
+      <span class="text-[10px] font-mono tracking-wider">HOME</span>
+      <span class="w-5 h-0.5 bg-cyan-400 rounded-full mt-0.5 shadow-[0_0_8px_#00d4ff] nav-indicator"></span>
+    </button>
+    <!-- Control -->
+    <button class="flex-1 flex flex-col items-center justify-center py-1.5 text-slate-400 hover:text-cyan-400 active:scale-95 transition-all duration-150 min-h-[48px] nav-btn" id="nav-btn-control" onclick="ui.switchTab('control')" type="button">
+      <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+      </svg>
+      <span class="text-[10px] font-mono tracking-wider font-semibold">CONTROL</span>
+      <span class="w-4 h-0.5 bg-transparent rounded-full mt-0.5 nav-indicator"></span>
+    </button>
+    <!-- Sensors -->
+    <button class="flex-1 flex flex-col items-center justify-center py-1.5 text-slate-400 hover:text-cyan-400 active:scale-95 transition-all duration-150 min-h-[48px] nav-btn" id="nav-btn-sensors" onclick="ui.switchTab('sensors')" type="button">
+      <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+      </svg>
+      <span class="text-[10px] font-mono tracking-wider font-semibold">SENSORS</span>
+      <span class="w-4 h-0.5 bg-transparent rounded-full mt-0.5 nav-indicator"></span>
+    </button>
+    <!-- System -->
+    <button class="flex-1 flex flex-col items-center justify-center py-1.5 text-slate-400 hover:text-cyan-400 active:scale-95 transition-all duration-150 min-h-[48px] nav-btn" id="nav-btn-system" onclick="ui.switchTab('system')" type="button">
+      <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      <span class="text-[10px] font-mono tracking-wider font-semibold">CONFIG</span>
+      <span class="w-4 h-0.5 bg-transparent rounded-full mt-0.5 nav-indicator"></span>
+    </button>
+  </nav>
+
+  <!-- Reusable Confirmation Dialog -->
+  <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden" id="dialog-backdrop">
+    <div class="bg-surface-container border border-outline-variant/40 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <h3 class="font-headline-md font-bold text-on-surface text-base" id="dialog-title">Confirm Action</h3>
+      <p class="font-body-sm text-xs text-on-surface-variant" id="dialog-body">Are you sure?</p>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button class="px-4 py-2 rounded-lg bg-surface-container-high text-on-surface text-xs font-label-sm" onclick="ui.closeDialog()">CANCEL</button>
+        <button class="px-4 py-2 rounded-lg bg-error-container text-white text-xs font-label-sm font-bold" id="dialog-confirm">CONFIRM</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Core Scripts -->
+<script src="/js/chart.js?v=20261030_v2"></script>
+<script src="/js/app.js?v=20261030_v2"></script>
+<script>
+  // Purge any stale service worker and browser caches immediately
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (let r of registrations) {
+        r.unregister();
+      }
+    });
+  }
+  if ('caches' in window) {
+    caches.keys().then((names) => {
+      for (let n of names) {
+        caches.delete(n);
+      }
+    });
+  }
+</script>
+
+</body>
+</html>

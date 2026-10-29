@@ -33,15 +33,16 @@ void Pumps::begin() {
 }
 
 // ──────────────────────────────────────────────────────────
-void Pumps::setChannel(int id, bool on, int speedPct) {
+void Pumps::setChannel(int id, bool on, int speedPct, bool reverse) {
     if (id < 1 || id > 2) return;
     int idx = id - 1;
 
+    _autoStopped = false; // Clear auto-stopped lock on manual operator command
+    if (on && speedPct <= 0) speedPct = 100; // Default to 100% when commanded ON
     speedPct = constrain(speedPct, 0, 100);
 
-    if (_pump[idx].on == on && _pump[idx].speedPct == (uint8_t)speedPct) return;
-
     _pump[idx].on       = on;
+    _pump[idx].reverse  = reverse;
     _pump[idx].speedPct = static_cast<uint8_t>(speedPct);
     _pump[idx].dryWarning = false;
 
@@ -55,8 +56,19 @@ void Pumps::setChannel(int id, bool on, int speedPct) {
 
     _applyPump(idx);
 
+    char buf[70];
+    snprintf(buf, sizeof(buf), "Pump %d: %s (%s) at %d%%",
+             id, on ? "ON" : "OFF", reverse ? "REVERSE" : "FORWARD", speedPct);
+    Logger::log(LogLevel::INFO, buf);
+}
+
+void Pumps::setDirection(int id, bool reverse) {
+    if (id < 1 || id > 2) return;
+    int idx = id - 1;
+    _pump[idx].reverse = reverse;
+    _applyPump(idx);
     char buf[60];
-    snprintf(buf, sizeof(buf), "Pump %d: %s at %d%%", id, on ? "ON" : "OFF", speedPct);
+    snprintf(buf, sizeof(buf), "Pump %d direction: %s", id, reverse ? "REVERSE" : "FORWARD");
     Logger::log(LogLevel::INFO, buf);
 }
 
@@ -94,8 +106,15 @@ void Pumps::update(unsigned long now, bool lowWireWet) {
 // ──────────────────────────────────────────────────────────
 void Pumps::_applyPump(int idx) {
     if (_pump[idx].on) {
-        digitalWrite(kIN1[idx], HIGH);
-        digitalWrite(kIN2[idx], LOW);
+        if (_pump[idx].reverse) {
+            // Reverse flow: IN1 = LOW, IN2 = HIGH
+            digitalWrite(kIN1[idx], LOW);
+            digitalWrite(kIN2[idx], HIGH);
+        } else {
+            // Forward flow: IN1 = HIGH, IN2 = LOW
+            digitalWrite(kIN1[idx], HIGH);
+            digitalWrite(kIN2[idx], LOW);
+        }
         uint32_t duty = (_pump[idx].speedPct * 255UL) / 100UL;
 #ifndef NATIVE_UNIT_TEST
         ledcWrite(kCH[idx], duty);

@@ -54,10 +54,21 @@ inline const char* systemStatusStr(SystemStatus s) {
     }
 }
 
-/// Operating mode
+/// Operating mode (MANUAL is strictly default 0 for operator autonomy)
 enum class OperatingMode : uint8_t {
-    AUTO   = 0,
-    MANUAL = 1
+    MANUAL = 0,
+    AUTO   = 1
+};
+
+/// Distinct buzzer tone patterns
+enum class BuzzerPattern : uint8_t {
+    SILENT = 0,
+    BOOT,       ///< Ascending 3-note power-on melody
+    FIRE,       ///< Alternating dual-tone high-urgency siren
+    GAS,        ///< 3-burst staccato warning
+    PROX,       ///< Tactical sonar chirps
+    FLOOD,      ///< Low-frequency continuous horn
+    FAULT       ///< Soft double-pip fault indicator
 };
 
 /// Active alarms bitmask
@@ -131,15 +142,18 @@ private:
     Ultrasonic& _us;
 
     SystemStatus  _status      = SystemStatus::SAFE;
-    OperatingMode _mode        = OperatingMode::AUTO;
+    OperatingMode _mode        = OperatingMode::MANUAL;
     uint16_t      _alarms      = AlarmFlag::NONE;
     bool          _interlocked = false;
     bool          _muted       = false;
     int           _gateCmd     = 0;       ///< Last commanded gate angle
 
-    // Buzzer state machine
-    bool          _buzzerOn    = false;
-    unsigned long _buzzerToggle= 0;
+    // Buzzer state machine with automatic timeout
+    BuzzerPattern _buzzerPattern   = BuzzerPattern::SILENT;
+    bool          _buzzerActive    = false;
+    bool          _buzzerOn        = false;
+    unsigned long _buzzerStartTime = 0;
+    uint16_t      _lastAlarmFlags  = AlarmFlag::NONE;
 
     // Status LED
     unsigned long _ledToggle   = 0;
@@ -150,6 +164,7 @@ private:
 
     void _applyAutoMode();
     void _applyInterlock();
+    void _triggerBuzzer(BuzzerPattern pattern, unsigned long now);
     void _updateBuzzer(unsigned long now);
     void _updateLED(unsigned long now);
     void _computeStatus();
