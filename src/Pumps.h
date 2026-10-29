@@ -21,7 +21,6 @@
 /// State of a single pump
 struct PumpState {
     bool on          = false;   ///< Is pump running?
-    bool reverse     = false;   ///< false = Forward (Inlet), true = Reverse (Drain)
     uint8_t speedPct = 0;       ///< Speed 0-100%
     unsigned long startedAt = 0;///< millis() when pump was last turned on
     bool dryWarning  = false;   ///< Set if pump running long with LOW dry
@@ -29,7 +28,7 @@ struct PumpState {
 
 /**
  * @class Pumps
- * @brief Controller for two DC pumps via L298N driver
+ * @brief Controller for two DC pumps via MJE3055T NPN power transistors
  */
 class Pumps {
 public:
@@ -41,10 +40,9 @@ public:
      * @param id       Pump number (1 or 2)
      * @param on       True = run, false = stop
      * @param speedPct Speed 0-100 (only used when on = true)
-     * @param reverse  False = forward, true = reverse flow
+     * @param reverse  Ignored (kept for signature compatibility)
      */
     void setChannel(int id, bool on, int speedPct = 100, bool reverse = false);
-    void setDirection(int id, bool reverse);
 
     /// Auto-stop both pumps (called by SafetyManager on DAM WARNING)
     void autoStop();

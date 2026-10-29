@@ -39,8 +39,12 @@ constexpr float SERVO_SPEED_DEG_PER_S   = 60.0f; ///< Degrees per second (smooth
 constexpr unsigned long SERVO_IDLE_DETACH_MS = 2000; ///< Detach after this idle time (ms)
 
 // ────────────────────────────────────────────────────────────
-//  Water Level Wires
+//  Water Level (Ultrasonic Sensor - HC-SR04 on GPIO 32/33)
+//  Mounted at top of reservoir pointing downwards at water.
 // ────────────────────────────────────────────────────────────
+constexpr float WATER_FULL_DIST_CM      = 5.0f;   ///< ≤5 cm from sensor means FULL (100% / DAM OVERFLOW WARNING)
+constexpr float WATER_EMPTY_DIST_CM     = 42.0f;  ///< ~16.5 inches total distance to basin bottom (12-18" dam)
+constexpr bool  WATER_USE_ULTRASONIC    = true;   ///< Use HC-SR04 for continuous water level sensing
 constexpr int   WIRE_DEBOUNCE_READS     = 5;   ///< Consecutive stable reads to change state
 constexpr unsigned long WIRE_POLL_MS    = 50;  ///< ms between debounce samples
 
@@ -50,6 +54,7 @@ constexpr unsigned long WIRE_POLL_MS    = 50;  ///< ms between debounce samples
 constexpr int   GATE_OPEN_THRESHOLD_DEG         = 10;     ///< Gate considered "open" above this
 constexpr unsigned long FLOW_CONFIRM_TIMEOUT_MS = 5000;   ///< ms to wait for flow confirmation
 constexpr unsigned long FLOW_LEAK_DETECT_MS     = 10000;  ///< ms gate closed before leak warning
+constexpr bool  FLOW_AUTO_CONFIRM               = true;   ///< Auto-confirm flow when gate is open and water is present
 
 // ────────────────────────────────────────────────────────────
 //  Proximity Zones (HC-SR04)

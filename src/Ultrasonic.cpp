@@ -95,46 +95,10 @@ float Ultrasonic::_medianFilter() {
 
 // ──────────────────────────────────────────────────────────
 void Ultrasonic::_updateZone(float cm) {
-    if (cm <= 0) {
-        // Invalid reading — don't change zone but accumulate clears
-        _clearCounter++;
-    } else if (cm <= PROX_WARN_CM) {
-        _dangerCounter++;
-        _warnCounter  = 0;
-        _clearCounter = 0;
-    } else if (cm <= PROX_CLEAR_CM) {
-        _warnCounter++;
-        _dangerCounter = 0;
-        _clearCounter  = 0;
-    } else {
-        _clearCounter++;
-        _warnCounter   = 0;
-        _dangerCounter = 0;
-    }
-
-    ProximityZone newZone = _zone;
-
-    switch (_zone) {
-        case ProximityZone::CLEAR:
-            if (_warnCounter  >= PROX_TRIGGER_COUNT) { newZone = ProximityZone::WARNING; _warnCounter  = 0; }
-            if (_dangerCounter>= PROX_TRIGGER_COUNT) { newZone = ProximityZone::DANGER;  _dangerCounter= 0; }
-            break;
-        case ProximityZone::WARNING:
-            if (_dangerCounter>= PROX_TRIGGER_COUNT) { newZone = ProximityZone::DANGER;  _dangerCounter= 0; }
-            if (_clearCounter >= PROX_CLEAR_COUNT)   { newZone = ProximityZone::CLEAR;   _clearCounter = 0; }
-            break;
-        case ProximityZone::DANGER:
-            if (_clearCounter >= PROX_CLEAR_COUNT)   { newZone = ProximityZone::CLEAR;   _clearCounter = 0; }
-            break;
-    }
-
-    if (newZone != _zone) {
-        _zone = newZone;
-        char buf[80];
-        snprintf(buf, sizeof(buf), "PROX %s: object at %.1f cm",
-            proximityZoneStr(_zone), cm > 0 ? cm : 0.0f);
-        LogLevel lvl = (_zone == ProximityZone::DANGER)  ? LogLevel::CRITICAL :
-                       (_zone == ProximityZone::WARNING) ? LogLevel::WARNING  : LogLevel::INFO;
-        Logger::log(lvl, buf);
-    }
+    // HC-SR04 on GPIO 32/33 is dedicated to reservoir water level measurement.
+    // Proximity zone is maintained CLEAR so water surface never blocks gate movement.
+    _zone          = ProximityZone::CLEAR;
+    _dangerCounter = 0;
+    _warnCounter   = 0;
+    _clearCounter  = 0;
 }

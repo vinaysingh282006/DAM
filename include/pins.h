@@ -21,25 +21,23 @@
 constexpr uint8_t PIN_SERVO         = 18;   ///< SG90/MG996R signal wire
 
 // ────────────────────────────────────────────────────────────
-//  WATER LEVEL WIRES (INPUT_PULLUP; LOW = wire is WET)
-//  Common GND wire goes to ESP32 GND — not a GPIO.
+//  WATER LEVEL SENSING (HC-SR04 Ultrasonic Sensor on GPIO 32/33)
+//  Replaces physical wires. Legacy GPIOs preserved as optional fallback.
 // ────────────────────────────────────────────────────────────
-constexpr uint8_t PIN_WIRE_LOW      = 25;   ///< ~25% reservoir height (Green wire)
-constexpr uint8_t PIN_WIRE_MEDIUM   = 26;   ///< ~50% reservoir height (Yellow wire)
-constexpr uint8_t PIN_WIRE_HIGH     = 27;   ///< ~75% reservoir height (Orange wire)
-constexpr uint8_t PIN_WIRE_WARNING  = 14;   ///< Near crest — overflow risk (Red wire)
-constexpr uint8_t PIN_WIRE_FLOW     = 13;   ///< Downstream of gate (Blue wire)
+constexpr uint8_t PIN_WIRE_LOW      = 25;   ///< Optional legacy wire (~25%)
+constexpr uint8_t PIN_WIRE_MEDIUM   = 26;   ///< Optional legacy wire (~50%)
+constexpr uint8_t PIN_WIRE_HIGH     = 27;   ///< Optional legacy wire (~75%)
+constexpr uint8_t PIN_WIRE_WARNING  = 14;   ///< Optional legacy wire (Near crest)
+constexpr uint8_t PIN_WIRE_FLOW     = 13;   ///< Optional tailrace flow wire (Blue wire)
 
 // ────────────────────────────────────────────────────────────
-//  L298N MOTOR DRIVER — PUMPS
-//  Pump 1 on Channel A, Pump 2 on Channel B
+//  PUMPS — MJE3055T NPN POWER TRANSISTORS
+//  Single GPIO pin per pump (Base connected via 220Ω - 1kΩ resistor)
 // ────────────────────────────────────────────────────────────
-constexpr uint8_t PIN_PUMP1_IN1     = 16;   ///< L298N IN1
-constexpr uint8_t PIN_PUMP1_IN2     = 17;   ///< L298N IN2
-constexpr uint8_t PIN_PUMP1_EN      = 4;    ///< L298N ENA (PWM speed)
-constexpr uint8_t PIN_PUMP2_IN1     = 19;   ///< L298N IN3
-constexpr uint8_t PIN_PUMP2_IN2     = 21;   ///< L298N IN4
-constexpr uint8_t PIN_PUMP2_EN      = 22;   ///< L298N ENB (PWM speed)
+constexpr uint8_t PIN_PUMP1         = 16;   ///< Pump 1 (Inlet) MJE3055T Base (GPIO 16)
+constexpr uint8_t PIN_PUMP2         = 17;   ///< Pump 2 (Outlet) MJE3055T Base (GPIO 17)
+constexpr uint8_t PIN_PUMP1_EN      = PIN_PUMP1; ///< Legacy alias
+constexpr uint8_t PIN_PUMP2_EN      = PIN_PUMP2; ///< Legacy alias
 
 // ────────────────────────────────────────────────────────────
 //  SENSORS

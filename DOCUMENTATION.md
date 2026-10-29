@@ -199,34 +199,73 @@ The SG90 idle current is only ~10–20 mA, but when the motor starts moving or e
 
 ---
 
-### 2.4. Water Level Conductivity Probes & Tailrace Confirmation
+### 2.4. Ultrasonic Reservoir Water Depth & Level Sensing (Replaces 5 Wire Leads)
 
 ```
-      Reservoir Conductivity Sensing (INPUT_PULLUP)
-         
-      VCC (3.3V Internal Pullup)
-              │
-          [10kΩ Pullup]
-              │
-    GPIO ───┬─┴──────────┐
-            │            │
-            │          [Water]
-            │            │
-           GND ──────────┘
+      HC-SR04 Downward-Facing Ultrasonic Reservoir Depth Sensor
+      
+                     ┌───────────┐
+                     │ HC-SR04   │  (Mounted above dam reservoir rim)
+                     │ [T]   [R] │  TRIG: GPIO 32  |  ECHO: GPIO 33
+                     └─┬───────┬─┘
+                       │       │
+                       ▼       ▲ Acoustic pulse reflection
+            - - - - - - - - - - - - - -  Rim / Full Threshold: <= 5.0 cm (100% DAM WARNING)
+           │ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ │
+           │    RESERVOIR WATER POOL   │ Linear Depth:
+           │ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ │ depth = emptyDist (42cm) - distance (cm)
+           │ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ │ depthIn = depthCm / 2.54 (~12" - 18" depth)
+            ───────────────────────────  Basin Floor: >= 42.0 cm (0% Empty)
 ```
-- **Probes:** 4 reservoir pins: `LOW` (GPIO 25), `MED` (GPIO 26), `HIGH` (GPIO 27), `WARNING` (GPIO 14) + 1 tailrace `FLOW` pin (GPIO 13).
-- **Working Principle:** Each pin is configured as `pinMode(pin, INPUT_PULLUP)`. When water rises and contacts a probe wire (which is grounded via the reservoir basin ground probe), the water's electrical conductivity pulls the pin `LOW`.
-- **Debouncing:** 5 consecutive stable readings (`WIRE_DEBOUNCE_READS = 5`) spaced 50 ms apart are required before changing state.
-- **Probe Fault Detection:** If a higher wire (e.g. HIGH) reads wet while a lower wire (e.g. LOW) reads dry, the firmware flags a `probeFault = true` alarm (indicating disconnected wire, corrosion, or air bubble).
-- **Gate-Flow State Machine:** When the gate opens $>10^\circ$, tailrace GPIO 13 must detect water within 5 seconds (`FLOW_CONFIRMED`). If it does not, a `FLOW_FAULT` alarm is raised. If water is detected while the gate is closed for $>10\text{ s}$, a `LEAK_WARNING` is raised.
+
+- **Ultrasonic Depth Sensing:** The HC-SR04 is mounted over the reservoir looking down at the water surface.
+  - **Distance $\le 5.0\text{ cm}$:** Water is right at the spillway rim $\implies$ **100% FULL**, `DAM_WARNING` flood state.
+  - **Distance $\ge 42.0\text{ cm}$ (~16.5" total depth):** Basin is dry $\implies$ **0% EMPTY**.
+  - **Continuous Linear Percentage:** Calculated on every pulse cycle:
+    $$\text{percent} = \text{clamp}\left(100 \times \frac{42.0 - \text{dist}}{42.0 - 5.0},\ 0,\ 100\right)$$
+  - **Depth Readouts:** Calculated in both metric (`cm`) and imperial (`inches`) for display on the dashboard:
+    $$\text{depthCm} = \text{clamp}(42.0 - \text{dist},\ 0,\ 37.0),\quad \text{depthIn} = \frac{\text{depthCm}}{2.54}$$
+- **Virtual Wire Emulation:** The firmware continuously derives SCADA virtual levels from the ultrasonic depth:
+  - `low` ($\ge 25\%$), `medium` ($\ge 50\%$), `high` ($\ge 75\%$), `warning` ($\ge 95\%$).
+  - **No submerged wire probes needed:** Eliminates corrosion, electrolysis, loose wires, and false short-circuits.
+- **Auto Gate-Flow Confirmation:** When the gate opens $>10^\circ$ and water is present, flow is automatically confirmed after 1.2s without requiring a physical wire probe in the tailrace. Safe leak detection remains active.
 
 ---
 
-### 2.5. L298N Dual Motor Driver & Water Pumps
-- **Inlet Pump 1** (GPIO 16 IN1, GPIO 17 IN2, GPIO 4 ENA).
-- **Outlet Pump 2** (GPIO 19 IN1, GPIO 21 IN2, GPIO 22 ENB).
-- **PWM Speed Control:** ESP32 hardware LEDC channels at 1 kHz frequency, 8-bit resolution (0–255 duty cycle).
-- **Dry-Run Protection:** If Pump 1 runs continuously for $>60\text{ s}$ while the LOW water sensor is dry, a `dryWarning` is asserted to protect pump impellers from dry friction burnout.
+### 2.5. MJE3055T NPN Power Transistor Pump Drivers
+
+```
+            MJE3055T Low-Side DC Pump Drive Circuit
+            
+                         +V External Motor Supply (+5V to +12V)
+                                       │
+                                       ├───────────────┐
+                                       │               │
+                                   ┌───┴───┐       ┌───┴───┐
+                                   │  (+)  │       │ Cathode
+                                   │ PUMP  │       │ Diode (1N4007)
+                                   │  (-)  │       │ Anode
+                                   └───┬───┘       └───┬───┘
+                                       │               │
+                                       ├───────────────┘
+                                       │
+                                  Collector (Pin 2 / Metal Tab)
+                                  ┌────┴───┐
+      ESP32 GPIO ────[ 330Ω-1kΩ ]─┤ Base   │ MJE3055T
+      (16 or 17)      Base Res.   │ (Pin 1)│ NPN TO-220
+                                  └────┬───┘
+                                  Emitter (Pin 3)
+                                       │
+                                  Common GND
+```
+
+- **MJE3055T Specifications:** TO-220 NPN Epitaxial-Base Silicon Power Transistor ($V_{CEO}=60\text{V}, I_C=10\text{A}, P_D=75\text{W}$).
+- **Single-GPIO Low-Side Switching:**
+  - **Pump 1 (Inlet):** Driven by **GPIO 16** via hardware LEDC PWM (Channel 0, 1 kHz, 8-bit).
+  - **Pump 2 (Outlet):** Driven by **GPIO 17** via hardware LEDC PWM (Channel 1, 1 kHz, 8-bit).
+  - Replaces bulky L298N module: frees up 4 GPIO pins and reduces voltage drop ($V_{CE(sat)} \approx 0.3\text{V}-0.5\text{V}$ vs. $\sim 2.0\text{V}$ drop on L298N Darlington drivers).
+- **Flyback Diode (Crucial):** A 1N4007 or 1N5819 diode connected in parallel with each pump motor absorbs back-EMF inductive voltage spikes when PWM switches, protecting the transistor.
+- **Dry-Run Protection:** If a pump runs continuously for $>60\text{ s}$ while the reservoir is low, a `dryWarning` alert is asserted to protect impellers from dry friction wear.
 
 ---
 
@@ -364,24 +403,18 @@ Here is what happens from physics to browser in under 60 milliseconds:
 | Component | Signal | ESP32 GPIO | Electrical Logic | Protection / Notes |
 |:---|:---|:---|:---|:---|
 | **SG90 Servo** | PWM Signal | **GPIO 18** | 3.3V PWM (50 Hz) | 500µs–2400µs; power servo from 5V rail with 100µF capacitor |
-| **HC-SR04** | Trigger | **GPIO 32** | 3.3V Output Pulse | $10\ \mu\text{s}$ pulse width |
-| **HC-SR04** | Echo | **GPIO 33** | **5V TTL Input** | **MUST use 1kΩ / 2kΩ voltage divider** to step down to 3.33V |
+| **HC-SR04 Water Sensor** | Trigger | **GPIO 32** | 3.3V Output Pulse | $10\ \mu\text{s}$ pulse width (Mount looking down at reservoir water) |
+| **HC-SR04 Water Sensor** | Echo | **GPIO 33** | **5V TTL Input** | **MUST use 1kΩ / 2kΩ voltage divider** to step down to 3.33V |
+| **Water Level (Sonar)** | Depth Sensor | **GPIO 32 / 33** | Acoustic ToF | **Replaces 5 wire leads!** $\le 5\text{cm} = 100\%$ Full, $\ge 42\text{cm} = 0\%$ Empty (~12"–18" depth) |
 | **MQ-135 Gas** | Analog Out | **GPIO 35** | 0–5V Analog (ADC1_CH7) | **Use 1kΩ / 2kΩ divider** or clamp to keep below 3.3V |
-| **Water Level** | LOW Probe | **GPIO 25** | Input Pullup | LOW = Wet (Water level $\ge 25\%$) |
-| **Water Level** | MED Probe | **GPIO 26** | Input Pullup | LOW = Wet (Water level $\ge 50\%$) |
-| **Water Level** | HIGH Probe | **GPIO 27** | Input Pullup | LOW = Wet (Water level $\ge 75\%$) |
-| **Water Level** | DAM WARN | **GPIO 14** | Input Pullup | LOW = Wet (Critical Flood / Emergency spillway open) |
-| **Water Level** | GATE FLOW | **GPIO 13** | Input Pullup | LOW = Wet (Confirms water discharging from gate) |
-| **Water Basin** | GND Reference | **GND** | Ground | Bare submerged wire at bottom of reservoir |
 | **Flame Sensor** | Digital Out | **GPIO 23** | Digital Input | Active LOW when IR flame detected |
-| **L298N Pump 1** | IN1 / IN2 | **GPIO 16 / 17** | 3.3V Logic | Reversible: Forward (IN1=H, IN2=L) = Inlet; Reverse (IN1=L, IN2=H) = Drain |
-| **L298N Pump 1** | ENA (PWM) | **GPIO 4** | 3.3V PWM (1 kHz) | Speed control (0–100%) — *Remove jumper cap on ENA!* |
-| **L298N Pump 2** | IN3 / IN4 | **GPIO 19 / 21** | 3.3V Logic | Direction control for Outlet Pump (IN3=H, IN4=L) |
-| **L298N Pump 2** | ENB (PWM) | **GPIO 22** | 3.3V PWM (1 kHz) | Speed control (0–100%) — *Remove jumper cap on ENB!* |
+| **Pump 1 (Inlet)** | MJE3055T Base | **GPIO 16** | 3.3V PWM (1 kHz) | Via 330Ω–1kΩ base resistor; Emitter to GND, Collector to Pump (-) with 1N4007 flyback diode |
+| **Pump 2 (Outlet)** | MJE3055T Base | **GPIO 17** | 3.3V PWM (1 kHz) | Via 330Ω–1kΩ base resistor; Emitter to GND, Collector to Pump (-) with 1N4007 flyback diode |
 | **Hydro Turbine** | Motor PWM | **GPIO 15** | 3.3V PWM (1 kHz) | Turbine DC motor speed drive via MOSFET / NPN Driver |
 | **Hydro Turbine** | Voltage Sense | **GPIO 34** | 0–3.3V Analog (ADC1_CH6) | Voltage divider (10kΩ/3.3kΩ) to measure generated voltage |
 | **Piezo Buzzer** | Signal (+) | **GPIO 5** | 3.3V PWM Tone (LEDC) | Tone alarms; auto-silences after 3.8s even if alarm holds |
 | **Status LED** | Onboard LED | **GPIO 2** | Active HIGH | Heartbeat pulse / alarm blink |
+| *(Conductivity Wires)* | *(Deprecated)* | *GPIO 25,26,27,14,13* | *Not required* | *Internal software emulates virtual levels from HC-SR04 distance* |
 
 ---
 
@@ -389,49 +422,47 @@ Here is what happens from physics to browser in under 60 milliseconds:
 
 ```
                        +5V Power Rail (External 5V 2A-3A)
-                         │       │       │
-                         │       │       ├──[100µF Cap]── GND
-                         │       │       │
-                         ▼       ▼       ▼
-                       MQ-135  HC-SR04  SG90
-                        VCC     VCC     Red
-                         │       │       │
-                         │       │       │  (Orange: Signal)
-                         │       │       └──────────────────────────┐
-                         │       │                                  │
-                         │       │ (Echo 5V)                        │
-                         │       ├───[1kΩ]───┬───► GPIO 33          │
-                         │       │           │                      │
-                         │       │         [2kΩ]                    │
-                         │       │           │                      │
-                         │       │          GND                     │
-                         │       │                                  │
-                         │       └───────────(Trig)◄─── GPIO 32     │
-                         │                                          │
-                         │ (AO 0-5V)                                │
-                         ├───[1kΩ]───┬───► GPIO 35 (ADC)            │
-                         │           │                              │
-                         │         [2kΩ]                            │
-                         │           │                              │
-                         │          GND                             │
-                         │                                          │
-                         ▼                                          ▼
-                      Common GND ────────────────────────────── GPIO 18
+                         │       │       │       │                   │
+                         │       │       │       ├──[1N4007 Diode]───┤ (Pump 1 & 2 +V)
+                         │       │       │       │   Cathode at +V   │
+                         │       │       ├──[100µF Cap]── GND        │
+                         │       │       │                           │
+                         ▼       ▼       ▼                           ▼
+                       MQ-135  HC-SR04  SG90                     Dual DC Pumps
+                        VCC     VCC     Red                         (+)   (+)
+                         │       │       │                           │     │
+                         │       │       │  (Orange: Signal)         │     │
+                         │       │       └───────────────────────┐   │     │
+                         │       │                               │   ▼     ▼
+                         │       │ (Echo 5V)                     │ Pump1 Pump2
+                         │       ├───[1kΩ]───┬───► GPIO 33       │  (-)   (-)
+                         │       │           │                   │   │     │
+                         │       │         [2kΩ]                 │   ▼     ▼
+                         │       │           │                   │  Coll. Coll.
+                         │       │          GND                  │ ┌───┐ ┌───┐
+                         │       │                               │ │   │ │   │ MJE3055T
+                         │       └───────────(Trig)◄─── GPIO 32  │ │   │ │   │ (Pin 2)
+                         │                                       │ └─┬─┘ └─┬─┘
+                         │ (AO 0-5V)                             │   │Base │Base (Pin 1)
+                         ├───[1kΩ]───┬───► GPIO 35 (ADC)         │  [R]   [R]  (330Ω - 1kΩ)
+                         │           │                           │   ▲     ▲
+                         │         [2kΩ]                         │   │     │
+                         │           │                           │ GPIO16 GPIO17
+                         │          GND                          │
+                         │                                       │
+                         ▼                                       ▼
+                      Common GND ─────────────────────────── GPIO 18
                          │
-                         ├─────────────────────────────────────────┐
-                         ▼                                         ▼
-                 ┌───────────────┐                         ┌───────────────┐
-                 │ ESP32 DevKit  │                         │ L298N Driver  │
-                 │ 3.3V Logic    │                         │ Motors & 12V  │
-                 └───────┬───────┘                         └───────────────┘
+                         ├───────────────────────────────────────┐
+                         ▼                                       ▼
+                 ┌───────────────┐                       ┌───────────────┐
+                 │ ESP32 DevKit  │                       │ MJE3055T Emit │
+                 │ 3.3V Logic    │                       │ Pins 3 to GND │
+                 └───────┬───────┘                       └───────────────┘
                          │
-                         ├── GPIO 25 ────► Wire LOW Probe
-                         ├── GPIO 26 ────► Wire MEDIUM Probe
-                         ├── GPIO 27 ────► Wire HIGH Probe
-                         ├── GPIO 14 ────► Wire DAM WARN Probe
-                         ├── GPIO 13 ────► Wire GATE FLOW Probe
-                         │
-                         └── Common Reservoir Ground Reference Wire
+                         │ (No messy submerged water wires needed!
+                         │  HC-SR04 on GPIO 32/33 measures reservoir
+                         │  depth linearly from 5cm to 42cm)
 ```
 
 ---

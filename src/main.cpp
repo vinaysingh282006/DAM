@@ -99,11 +99,11 @@ void loop() {
     unsigned long now = millis();
 
     // ── Sensor updates (non-blocking) ─────────────────────
-    waterLevel.update(now);
+    ultrasonic.update(now);
+    waterLevel.update(now, ultrasonic.getDistanceCm(), ultrasonic.isDisconnected());
     gateFlow.update(now, servoGate.getActualAngle(), waterLevel.getState().low);
     fireSensor.update(now);
     gasSensor.update(now);
-    ultrasonic.update(now);
 
     // ── Actuator / logic updates ───────────────────────────
     pumps.update(now, waterLevel.getState().low);

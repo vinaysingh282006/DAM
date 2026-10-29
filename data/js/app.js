@@ -178,9 +178,6 @@ const app = {
         if (this.state.pumps[0]) {
           data.pumps[0].on = this.state.pumps[0].on;
           data.pumps[0].speed = this.state.pumps[0].speed;
-          if (this.state.pumps[0].reverse !== undefined) {
-            data.pumps[0].reverse = this.state.pumps[0].reverse;
-          }
         }
         if (this.state.pumps[1]) {
           data.pumps[1].on = this.state.pumps[1].on;
@@ -249,14 +246,25 @@ const app = {
 
     // 2. Water Tank Telemetry
     const levelPct = data.level ? (data.level.percent || 0) : 0;
+    const waterDist = data.level ? (data.level.distanceCm || 0) : 0;
+    const depthCm = data.level ? (data.level.depthCm || 0) : 0;
+    const depthIn = data.level ? (data.level.depthIn || 0) : 0;
     const waterBox = document.getElementById('water-fill-box');
     const waterPctEl = document.getElementById('water-pct-display');
     const waterCapEl = document.getElementById('water-capacity-metric');
     const waterElevEl = document.getElementById('water-elevation-label');
+    const waterDistEl = document.getElementById('water-dist-metric');
 
     if (waterBox) waterBox.style.height = `${Math.max(8, Math.min(100, levelPct))}%`;
     if (waterPctEl) waterPctEl.textContent = `${levelPct}%`;
     if (waterCapEl) waterCapEl.textContent = `${(levelPct * 25).toLocaleString()}`;
+    if (waterDistEl) {
+      if (waterDist > 0) {
+        waterDistEl.textContent = `${waterDist.toFixed(1)} cm gap • ${depthIn.toFixed(1)}" depth`;
+      } else {
+        waterDistEl.textContent = 'HC-SR04 SONAR';
+      }
+    }
     if (waterElevEl) {
       if (levelPct >= 95) waterElevEl.textContent = 'CRITICAL FLOOD SPILLWAY BREACH';
       else if (levelPct >= 75) waterElevEl.textContent = 'HIGH RETENTION POOL';
@@ -383,8 +391,8 @@ const app = {
     if (data.pumps && data.pumps.length >= 2) {
       const p1 = data.pumps[0];
       const p2 = data.pumps[1];
-      ui.updatePumpSwitch(1, !!p1.on, p1.speed !== undefined ? p1.speed : 100, !!p1.reverse, p1.runtimeS || 0);
-      ui.updatePumpSwitch(2, !!p2.on, p2.speed !== undefined ? p2.speed : 100, false, p2.runtimeS || 0);
+      ui.updatePumpSwitch(1, !!p1.on, p1.speed !== undefined ? p1.speed : 100, p1.runtimeS || 0);
+      ui.updatePumpSwitch(2, !!p2.on, p2.speed !== undefined ? p2.speed : 100, p2.runtimeS || 0);
     }
 
     // ── Hydro-Electric Turbine Demo Telemetry ───────────────
@@ -507,6 +515,16 @@ const app = {
     const sPctLbl = document.getElementById('sensors-pct-label');
     if (sVerticalBar) sVerticalBar.style.height = `${Math.max(5, Math.min(100, levelPct))}%`;
     if (sPctLbl) sPctLbl.textContent = `${levelPct}% LVL`;
+
+    // Ultrasonic Live Calibration Readout
+    const sDistEcho = document.getElementById('sensors-dist-echo');
+    const sDepthEcho = document.getElementById('sensors-depth-echo');
+    if (sDistEcho) {
+      sDistEcho.textContent = waterDist > 0 ? `${waterDist.toFixed(1)} cm` : '-- cm';
+    }
+    if (sDepthEcho) {
+      sDepthEcho.textContent = depthCm >= 0 ? `${depthCm.toFixed(1)} cm (${depthIn.toFixed(1)}")` : '-- cm';
+    }
 
     // MQ-135 Gas Telemetry
     const gas = data.gas || {};
@@ -679,12 +697,10 @@ const api = {
     return this.send(`/api/gate?angle=${val}`, { angle: val });
   },
 
-  setPump(id, on, speed, reverse) {
+  setPump(id, on, speed) {
     const s = parseInt(speed, 10);
-    const revParam = reverse !== undefined ? `&reverse=${!!reverse}` : '';
     const body = { id, on: !!on, speed: s };
-    if (reverse !== undefined) body.reverse = !!reverse;
-    return this.send(`/api/pump?id=${id}&on=${on}&speed=${s}${revParam}`, body);
+    return this.send(`/api/pump?id=${id}&on=${on}&speed=${s}`, body);
   },
 
   setTurbine(on, speed) {
@@ -796,7 +812,7 @@ const ui = {
     if (lbl) lbl.textContent = `TARGET: ${targetAngle}°`;
   },
 
-  updatePumpSwitch(id, isOn, speed, isReverse, runtimeS) {
+  updatePumpSwitch(id, isOn, speed, runtimeS) {
     const sw = document.getElementById(`switch-pump${id}`);
     const knob = document.getElementById(`knob-pump${id}`);
     const badge = document.getElementById(`pump${id}-status-badge`);
@@ -838,7 +854,7 @@ const ui = {
 
     if (relay) {
       const spd = speed !== undefined ? speed : 100;
-      relay.textContent = isOn ? `RELAY ENGAGED (${spd}%)` : 'RELAY IDLE';
+      relay.textContent = isOn ? `MJE3055T ACTIVE (${spd}%)` : 'RELAY IDLE';
       relay.className = isOn
         ? 'font-label-md text-xs font-bold flex items-center gap-1.5 text-emerald-400'
         : 'font-label-md text-xs font-bold flex items-center gap-1.5 text-on-surface-variant';
@@ -860,36 +876,6 @@ const ui = {
       } else {
         runtimeEl.textContent = 'STANDBY';
         runtimeEl.className = 'font-label-sm text-[10px] text-slate-400 font-mono block mt-0.5';
-      }
-    }
-
-    // Direction indicators for Pump 1
-    if (id === 1) {
-      const dirText = document.getElementById('pump1-dir-text');
-      const dirIcon = document.getElementById('pump1-dir-icon');
-      const btnFwd = document.getElementById('btn-pump1-fwd');
-      const btnRev = document.getElementById('btn-pump1-rev');
-
-      if (dirText) dirText.textContent = isReverse ? 'REVERSE (DRAIN FLOW)' : 'FORWARD (INLET FILL)';
-      if (dirIcon) {
-        if (isReverse) {
-          dirIcon.style.transform = 'rotate(180deg)';
-          dirIcon.classList.add('text-amber-400');
-          dirIcon.classList.remove('text-cyan-400');
-        } else {
-          dirIcon.style.transform = 'rotate(0deg)';
-          dirIcon.classList.remove('text-amber-400');
-          dirIcon.classList.add('text-cyan-400');
-        }
-      }
-      if (btnFwd && btnRev) {
-        if (isReverse) {
-          btnRev.className = 'px-3 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold transition-all shadow-[0_0_8px_rgba(245,158,11,0.6)]';
-          btnFwd.className = 'px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-all';
-        } else {
-          btnFwd.className = 'px-3 py-1 rounded-lg bg-cyan-500 text-slate-950 font-bold transition-all shadow-[0_0_8px_rgba(0,212,255,0.6)]';
-          btnRev.className = 'px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-all';
-        }
       }
     }
   },
@@ -1012,20 +998,7 @@ const ui = {
   },
 
   setPumpDirection(id, reverse) {
-    try { sound.playClick(); } catch (e) {}
-    const idx = id - 1;
-    const isCurrentlyOn = !!(app.state && app.state.pumps && app.state.pumps[idx] && app.state.pumps[idx].on);
-    const slider = document.getElementById(`pump${id}-speed-slider`);
-    const speed = slider ? parseInt(slider.value, 10) : 100;
-    const runtimeS = (app.state && app.state.pumps && app.state.pumps[idx] && app.state.pumps[idx].runtimeS) || 0;
-
-    this.updatePumpSwitch(id, isCurrentlyOn, speed, reverse, runtimeS);
-
-    if (!app.state) app.state = {};
-    if (!app.state.pumps) app.state.pumps = [{}, {}];
-    app.state.pumps[idx] = { ...app.state.pumps[idx], id, on: isCurrentlyOn, speed, reverse };
-
-    api.setPump(id, isCurrentlyOn, speed, reverse);
+    // Deprecated for MJE3055T single-direction control
   },
 
   onPumpToggle(id, on) {
@@ -1035,13 +1008,8 @@ const ui = {
     const speed = on ? (slider && parseInt(slider.value, 10) > 0 ? parseInt(slider.value, 10) : 100) : 0;
     if (slider && on && parseInt(slider.value, 10) === 0) slider.value = 100;
 
-    let isReverse = false;
-    if (id === 1 && app.state && app.state.pumps && app.state.pumps[0]) {
-      isReverse = !!app.state.pumps[0].reverse;
-    }
-
     // Instant local tactile switch & badge update
-    this.updatePumpSwitch(id, on, speed, isReverse, on ? 1 : 0);
+    this.updatePumpSwitch(id, on, speed, on ? 1 : 0);
 
     // Also update Quick Status row on Overview tab
     const pText = document.getElementById(`text-pump${id}`);
@@ -1054,9 +1022,9 @@ const ui = {
     app._pumpLockUntil = Date.now() + 4000;
     if (!app.state) app.state = {};
     if (!app.state.pumps) app.state.pumps = [{}, {}];
-    app.state.pumps[idx] = { id, on: !!on, speed, reverse: isReverse, runtimeS: on ? 1 : 0 };
+    app.state.pumps[idx] = { id, on: !!on, speed, runtimeS: on ? 1 : 0 };
 
-    api.setPump(id, on, speed, isReverse);
+    api.setPump(id, on, speed);
   },
 
   onPumpSpeed(id, val) {
@@ -1064,11 +1032,10 @@ const ui = {
     if (lbl) lbl.textContent = `${val}%`;
     const idx = id - 1;
     const isCurrentlyOn = !!(app.state && app.state.pumps && app.state.pumps[idx] && app.state.pumps[idx].on);
-    const isReverse = id === 1 && app.state && app.state.pumps && app.state.pumps[0] ? !!app.state.pumps[0].reverse : false;
 
     if (this[`_pDebounce${id}`]) clearTimeout(this[`_pDebounce${id}`]);
     this[`_pDebounce${id}`] = setTimeout(() => {
-      api.setPump(id, isCurrentlyOn, val, isReverse);
+      api.setPump(id, isCurrentlyOn, val);
     }, 60);
   },
 

@@ -61,15 +61,11 @@ void SafetyManager::update(unsigned long now) {
               "WARNING: gas elevated", LogLevel::WARNING);
 
     // Proximity
-    ProximityZone zone = _us.getZone();
-    _setAlarm(AlarmFlag::PROX_DANGER, zone == ProximityZone::DANGER,
-              "PROX DANGER: object very close to gate", LogLevel::CRITICAL);
-    _setAlarm(AlarmFlag::PROX_WARN,
-              zone == ProximityZone::WARNING && zone != ProximityZone::DANGER,
-              "PROX WARNING: keep away from gate", LogLevel::WARNING);
-    _setAlarm(AlarmFlag::PROX_AUTO_WARN,
-              zone != ProximityZone::CLEAR,
-              "AUTO-WARNING: Object approaching spillway gate!", LogLevel::WARNING);
+    // Note: Single HC-SR04 on GPIO 32/33 is dedicated to reservoir water level measurement.
+    // Proximity alarms are cleared so water surface never creates a false gate obstacle lockout.
+    _setAlarm(AlarmFlag::PROX_DANGER, false, "", LogLevel::INFO);
+    _setAlarm(AlarmFlag::PROX_WARN, false, "", LogLevel::INFO);
+    _setAlarm(AlarmFlag::PROX_AUTO_WARN, false, "", LogLevel::INFO);
 
     // Sensor Disconnection Detection
     bool usFault   = _us.isDisconnected();

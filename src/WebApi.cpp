@@ -251,7 +251,6 @@ void WebApi::_handlePump(AsyncWebServerRequest* req, JsonDocument& doc) {
     int  id      = 0;
     bool on      = false;
     int  speed   = 100;
-    bool reverse = false;
 
     if (!doc["id"].isNull()) id = doc["id"].as<int>();
     else if (req->hasArg("id")) id = req->arg("id").toInt();
@@ -262,16 +261,11 @@ void WebApi::_handlePump(AsyncWebServerRequest* req, JsonDocument& doc) {
     if (!doc["speed"].isNull()) speed = doc["speed"].as<int>();
     else if (req->hasArg("speed")) speed = req->arg("speed").toInt();
 
-    if (!doc["reverse"].isNull()) reverse = doc["reverse"].as<bool>();
-    else if (req->hasArg("reverse")) reverse = (req->arg("reverse") == "true" || req->arg("reverse") == "1");
-    else if (req->hasArg("dir")) reverse = (req->arg("dir") == "reverse" || req->arg("dir") == "rev");
-    else if (id == 1) reverse = _pumps.getPump1().reverse; // preserve current direction if not passed
-
     if (id < 1 || id > 2) { req->send(400, "application/json", "{\"error\":\"id must be 1 or 2\"}"); return; }
 
     _sm.setMode(OperatingMode::MANUAL);
     if (on && speed <= 0) speed = 100;
-    _pumps.setChannel(id, on, speed, reverse);
+    _pumps.setChannel(id, on, speed);
     _pushState(true);
     req->send(200, "application/json", "{\"ok\":true}");
 }
@@ -287,8 +281,22 @@ void WebApi::_handleMode(AsyncWebServerRequest* req, JsonDocument& doc) {
 }
 
 void WebApi::_handleSettings(AsyncWebServerRequest* req, JsonDocument& doc) {
-    // Persist or accept
-    Logger::log(LogLevel::INFO, "Settings update received");
+    if (!doc["water_empty_cm"].isNull()) {
+        float emptyCm = doc["water_empty_cm"].as<float>();
+        if (emptyCm > 15.0f && emptyCm < 200.0f) {
+            _wl.setCalibration(_wl.getFullDistCm(), emptyCm);
+            Logger::log(LogLevel::INFO, "Calibrated water empty distance: " + String(emptyCm, 1) + " cm");
+        }
+    }
+    if (!doc["water_full_cm"].isNull()) {
+        float fullCm = doc["water_full_cm"].as<float>();
+        if (fullCm >= 2.0f && fullCm < _wl.getEmptyDistCm()) {
+            _wl.setCalibration(fullCm, _wl.getEmptyDistCm());
+            Logger::log(LogLevel::INFO, "Calibrated water full distance: " + String(fullCm, 1) + " cm");
+        }
+    }
+    Logger::log(LogLevel::INFO, "Settings update processed");
+    _pushState(true);
     req->send(200, "application/json", "{\"ok\":true}");
 }
 
@@ -337,9 +345,14 @@ String WebApi::_buildStateJson() {
     gate["moving"] = _sg.isMoving();
     gate["paused"] = _sg.isPaused();
 
-    // Water level
+    // Water level (Continuous HC-SR04 ultrasonic measurement)
     JsonObject level = doc["level"].to<JsonObject>();
-    level["percent"] = wls.levelPercent;
+    level["percent"]    = wls.levelPercent;
+    level["distanceCm"] = wls.distanceCm;
+    level["depthCm"]    = wls.waterDepthCm;
+    level["depthIn"]    = wls.waterDepthIn;
+    level["fullDistCm"] = _wl.getFullDistCm();
+    level["emptyDistCm"]= _wl.getEmptyDistCm();
     JsonObject wires = level["wires"].to<JsonObject>();
     wires["low"]     = wls.low;
     wires["medium"]  = wls.medium;
@@ -353,10 +366,10 @@ String WebApi::_buildStateJson() {
     flow["state"]     = flowStateStr(_gf.getState());
     flow["confirmMs"] = _gf.getConfirmMs();
 
-    // Proximity
+    // Proximity / Sensor Status
     JsonObject prox = doc["proximity"].to<JsonObject>();
     prox["distanceCm"] = _us.getDistanceCm();
-    prox["zone"]       = proximityZoneStr(_us.getZone());
+    prox["zone"]       = "CLEAR";
 
     // Pumps
     JsonArray pumps = doc["pumps"].to<JsonArray>();
@@ -365,8 +378,6 @@ String WebApi::_buildStateJson() {
         JsonObject p = pumps.add<JsonObject>();
         p["id"]         = i + 1;
         p["on"]         = ps.on;
-        p["reverse"]    = ps.reverse;
-        p["direction"]  = ps.reverse ? "REVERSE" : "FORWARD";
         p["speed"]      = ps.speedPct;
         p["dryWarning"] = ps.dryWarning;
         p["runtimeS"]   = ps.on && ps.startedAt > 0 ?
@@ -490,11 +501,10 @@ void WebApi::_handleWsMessage(uint8_t* data, size_t len) {
         int id = doc["id"] | 0;
         bool on = doc["on"] | false;
         int speed = doc["speed"] | 100;
-        bool reverse = doc["reverse"] | (id == 1 ? _pumps.getPump1().reverse : false);
         if (id >= 1 && id <= 2) {
             _sm.setMode(OperatingMode::MANUAL);
             if (on && speed <= 0) speed = 100;
-            _pumps.setChannel(id, on, speed, reverse);
+            _pumps.setChannel(id, on, speed);
             _pushState(true);
         }
     } else if (strcmp(cmd, "turbine") == 0) {

@@ -23,19 +23,22 @@
 #include "config.h"
 #include "pins.h"
 
-/// Snapshot of all water level wire states
+/// Snapshot of all water level states (Ultrasonic + virtual levels)
 struct WaterLevelState {
-    bool low;           ///< LOW wire is wet
-    bool medium;        ///< MEDIUM wire is wet
-    bool high;          ///< HIGH wire is wet
-    bool warning;       ///< DAM WARNING wire is wet
-    bool probeFault;    ///< Sanity violation detected
-    int  levelPercent;  ///< 0 / 25 / 50 / 75 / 100
+    bool low;           ///< LOW level reached (>= 25%)
+    bool medium;        ///< MEDIUM level reached (>= 50%)
+    bool high;          ///< HIGH level reached (>= 75%)
+    bool warning;       ///< DAM WARNING level reached (>= 95% / <= 5cm from sensor)
+    bool probeFault;    ///< Ultrasonic disconnected / out of range
+    int  levelPercent;  ///< Smooth continuous 0 - 100%
+    float distanceCm;   ///< Distance from ultrasonic to water surface in cm
+    float waterDepthCm; ///< Depth of water in reservoir (cm)
+    float waterDepthIn; ///< Depth of water in reservoir (inches)
 };
 
 /**
  * @class WaterLevel
- * @brief Manages the 4 level detection wires
+ * @brief Continuous ultrasonic water level reader with calibration and virtual levels
  */
 class WaterLevel {
 public:
@@ -43,41 +46,45 @@ public:
     void begin();
 
     /**
-     * @brief Poll wires and update debounce state.
-     * @param now  Current millis() value
-     * Call every loop iteration (non-blocking).
+     * @brief Update water level from HC-SR04 distance.
+     * @param now Current millis()
+     * @param distanceCm Distance to water surface in cm from ultrasonic sensor
+     * @param usDisconnected True if ultrasonic sensor has no echo / disconnected
      */
-    void update(unsigned long now);
+    void update(unsigned long now, float distanceCm = -1.0f, bool usDisconnected = false);
 
     /// Return the latest validated state snapshot
     const WaterLevelState& getState() const { return _state; }
 
-    /// True if the DAM WARNING wire is currently wet
+    /// True if the DAM WARNING (critical high water / <=5cm) is active
     bool isDamWarning() const { return _state.warning; }
 
-    /// True if any probe fault has been detected
+    /// True if sensor fault has been detected
     bool hasProbeFault() const { return _state.probeFault; }
+
+    /// Calibration: set distance at 100% full (e.g. 5cm) and 0% empty (e.g. 42cm)
+    void setCalibration(float fullDistCm, float emptyDistCm) {
+        _fullDistCm = fullDistCm;
+        _emptyDistCm = emptyDistCm;
+    }
+    float getFullDistCm() const { return _fullDistCm; }
+    float getEmptyDistCm() const { return _emptyDistCm; }
 
 private:
     WaterLevelState _state{};
+    float _fullDistCm  = WATER_FULL_DIST_CM;   ///< 5.0 cm default
+    float _emptyDistCm = WATER_EMPTY_DIST_CM;  ///< 42.0 cm (~16.5") default
+    unsigned long _lastPoll = 0;
 
-    // Per-wire debounce counters
+    // Per-wire debounce counters (for legacy fallback if ever needed)
     uint8_t _debLow     = 0;
     uint8_t _debMedium  = 0;
     uint8_t _debHigh    = 0;
     uint8_t _debWarning = 0;
-
-    // Pending states (candidates before debounce passes)
     bool _pendLow     = false;
     bool _pendMedium  = false;
     bool _pendHigh    = false;
     bool _pendWarning = false;
 
-    unsigned long _lastPoll = 0;
-
-    /// Read one wire with debounce; returns true when state has been committed
-    bool _debounce(uint8_t pin, bool& pending, uint8_t& counter, bool& committed);
-
-    /// Compute level% and run sanity check
     void _computeLevel();
 };

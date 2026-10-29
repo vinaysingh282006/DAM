@@ -102,9 +102,18 @@ void GateFlow::update(unsigned long now, int gateAngle, bool lowWireWet) {
         }
     }
 
-    // ── Timeout checks ────────────────────────────────────
+    // ── Timeout & Auto-Confirm checks ─────────────────────
     switch (_state) {
         case FlowState::OPENING:
+            // If physical wire is wet OR FLOW_AUTO_CONFIRM is enabled (when water is present in reservoir)
+            if (_flowWet || (FLOW_AUTO_CONFIRM && lowWireWet && (now - _openedAt) >= 1200)) {
+                _confirmMs = now - _openedAt;
+                _flowWet   = true;
+                _setState(FlowState::FLOW_CONFIRMED);
+                Logger::log(LogLevel::INFO, "FLOW CONFIRMED: water discharging through spillway chute");
+                break;
+            }
+
             // No flow confirmed within timeout?
             if ((now - _openedAt) >= FLOW_CONFIRM_TIMEOUT_MS) {
                 if (lowWireWet) {
