@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # AquaGuard Dam Control — Autonomous Miniature Dam & Hydro-Power SCADA
 
 [![PlatformIO](https://img.shields.io/badge/PlatformIO-ESP32-orange.svg)](https://platformio.org/)
@@ -369,3 +370,6 @@ Open **`http://localhost:3000`** in any web browser to test all sensor scenarios
 ## License & Copyright
 Developed for the **AquaGuard Smart Miniature Dam Project**.  
 Built with ESP32, PlatformIO, and the Stitch SCADA design framework.
+=======
+# DAM
+>>>>>>> 9beae7631d4b5ee9a0453f8e52a1ce83ac5410aa
