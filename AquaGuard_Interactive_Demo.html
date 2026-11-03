@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AquaGuard SCADA — Interactive Simulation Lab & Viva Defense Console</title>
+  <style>
+    /* ==========================================================================
+       AQUAGUARD SCADA INTERACTIVE SIMULATION LAB - 100% OFFLINE STYLING
+       Self-contained, ultra-responsive dark SCADA theme with cyber-tactical colors
+       ========================================================================== */
+    :root {
+      --bg-base: #060911;
+      --bg-panel: #0d1527;
+      --bg-card: #121d36;
+      --bg-card-hover: #182645;
+      --border-subtle: #1e2e4f;
+      --border-glow: #2d4575;
+      
+      --cyan-500: #06b6d4;
+      --cyan-400: #22d3ee;
+      --cyan-glow: rgba(6, 182, 212, 0.35);
+      
+      --emerald-500: #10b981;
+      --emerald-400: #34d399;
+      --emerald-glow: rgba(16, 185, 129, 0.35);
+      
+      --amber-500: #f59e0b;
+      --amber-400: #fbbf24;
+      --amber-glow: rgba(245, 158, 11, 0.35);
+      
+      --rose-500: #f43f5e;
+      --rose-400: #fb7185;
+      --rose-glow: rgba(244, 63, 94, 0.4);
+      
+      --blue-500: #3b82f6;
+      --blue-400: #60a5fa;
+      --purple-500: #8b5cf6;
+      
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* SCADA Grid Background Texture */
+    .scada-bg {
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.08) 0%, transparent 60%),
+        linear-gradient(to right, rgba(30, 46, 79, 0.25) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(30, 46, 79, 0.25) 1px, transparent 1px);
+      background-size: 100% 100%, 32px 32px, 32px 32px;
+      background-position: 0 0, -1px -1px, -1px -1px;
+    }
+
+    /* Top Navigation Bar */
+    header.scada-header {
+      background: rgba(13, 21, 39, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.75rem 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #0e7490, #0369a1);
+      border: 1px solid var(--cyan-400);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px var(--cyan-glow);
+    }
+
+    .brand-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: #fff;
+      stroke-width: 2;
+    }
+
+    .brand-text h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge-viva {
+      background: linear-gradient(90deg, #7c3aed, #4f46e5);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      box-shadow: 0 0 8px rgba(124, 58, 237, 0.5);
+    }
+
+    .brand-text p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* System Status Indicators */
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald-400);
+      box-shadow: 0 0 8px var(--emerald-400);
+      animation: pulseAnim 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseAnim {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Mode Switcher Buttons */
+    .btn-toggle {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 0.4rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-toggle:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-main);
+      border-color: var(--border-glow);
+    }
+
+    .btn-toggle.active-sim {
+      background: rgba(6, 182, 212, 0.15);
+      border-color: var(--cyan-400);
+      color: var(--cyan-400);
+      box-shadow: 0 0 12px var(--cyan-glow);
+    }
+
+    .btn-toggle.active-hw {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--emerald-400);
+      color: var(--emerald-400);
+      box-shadow: 0 0 12px var(--emerald-glow);
+    }
+
+    .btn-audio {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    /* SCENARIO BAR */
+    .scenario-strip {
+      background: #09101f;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.6rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .scenario-strip-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--cyan-400);
+      font-weight: 700;
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .scenario-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 0.35rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .scenario-btn:hover {
+      background: var(--bg-card-hover);
+      color: #fff;
+      border-color: var(--cyan-500);
+      transform: translateY(-1px);
+    }
+
+    .scenario-btn.active {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(3, 105, 161, 0.3));
+      border-color: var(--cyan-400);
+      color: #fff;
+      box-shadow: 0 0 12px var(--cyan-glow);
+    }
+
+    /* MAIN WORKSPACE GRID */
+    .main-container {
+      max-width: 1720px;
+      margin: 0 auto;
+      padding: 1.25rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 1200px) {
+      .main-container {
+        grid-template-columns: 7fr 5fr;
+      }
+    }
+
+    /* Cards and Panels */
+    .scada-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      background: rgba(18, 29, 54, 0.7);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .panel-title svg {
+      width: 16px;
+      height: 16px;
+      color: var(--cyan-400);
+    }
+
+    .panel-body {
+      padding: 1.25rem;
+      position: relative;
+    }
+
+    /* ==========================================================================
+       DAM CUTAWAY VECTOR STAGE & ANIMATIONS
+       ========================================================================== */
+    .cutaway-stage {
+      position: relative;
+      background: #080e1c;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+    }
+
+    #damSvg {
+      width: 100%;
+      height: auto;
+      display: block;
+      user-select: none;
+    }
+
+    /* Hydraulic Foam & Bubble particle animations */
+    @keyframes foamFlow {
+      0% { transform: translateX(0) scaleY(1); opacity: 0.9; }
+      50% { transform: translateX(15px) scaleY(1.2); opacity: 0.6; }
+      100% { transform: translateX(30px) scaleY(1); opacity: 0.9; }
+    }
+
+    .foam-anim {
+      animation: foamFlow 1.8s infinite ease-in-out alternate;
+    }
+
+    @keyframes sonarPing {
+      0% { r: 5; opacity: 0.9; stroke-width: 3; }
+      100% { r: 65; opacity: 0; stroke-width: 1; }
+    }
+
+    .sonar-ping-wave {
+      animation: sonarPing 1.6s infinite cubic-bezier(0.1, 0.7, 0.3, 1);
+      transform-origin: 220px 200px;
+    }
+
+    /* Live Overlays on Dam Stage */
+    .stage-hud {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .hud-tag {
+      background: rgba(13, 21, 39, 0.85);
+      border: 1px solid var(--border-subtle);
+      backdrop-filter: blur(6px);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hud-tag strong {
+      color: var(--cyan-400);
+    }
+
+    .hud-tag.alert-tag {
+      border-color: var(--rose-500);
+      background: rgba(244, 63, 94, 0.15);
+      color: #fff;
+    }
+
+    /* VIVA DEFENSE CALCULATION HUD */
+    .viva-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .viva-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .viva-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 100%;
+      background: var(--cyan-400);
+    }
+
+    .viva-card.emerald-border::before { background: var(--emerald-400); }
+    .viva-card.amber-border::before { background: var(--amber-400); }
+    .viva-card.rose-border::before { background: var(--rose-400); }
+
+    .viva-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .viva-formula {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--cyan-400);
+      margin-bottom: 0.4rem;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .viva-value {
+      font-family: var(--font-mono);
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: baseline;
+      gap: 0.35rem;
+    }
+
+    .viva-unit {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-dim);
+    }
+
+    .viva-note {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+
+    /* RIGHT COLUMN TEST BENCHES */
+    .test-benches {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* Water Conductive Probe Visualizer */
+    .probe-matrix {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .probe-card {
+      background: rgba(18, 29, 54, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 0.6rem;
+      text-align: center;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .probe-card:hover {
+      border-color: var(--cyan-500);
+      background: rgba(18, 29, 54, 0.9);
+    }
+
+    .probe-card.submerged {
+      background: rgba(6, 182, 212, 0.15);
+      border-color: var(--cyan-400);
+      box-shadow: 0 0 10px var(--cyan-glow);
+    }
+
+    .probe-card.danger-alert {
+      background: rgba(244, 63, 94, 0.2);
+      border-color: var(--rose-400);
+      box-shadow: 0 0 12px var(--rose-glow);
+    }
+
+    .probe-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #334155;
+      margin: 0 auto 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .probe-card.submerged .probe-dot {
+      background: var(--cyan-400);
+      box-shadow: 0 0 8px var(--cyan-400);
+    }
+
+    .probe-card.danger-alert .probe-dot {
+      background: var(--rose-400);
+      box-shadow: 0 0 10px var(--rose-400);
+      animation: pulseAnim 1s infinite;
+    }
+
+    .probe-name {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .probe-gpio {
+      font-size: 0.62rem;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+    }
+
+    .probe-state {
+      font-size: 0.68rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      margin-top: 0.25rem;
+      color: var(--text-dim);
+    }
+
+    .probe-card.submerged .probe-state {
+      color: var(--cyan-400);
+    }
+
+    .probe-card.danger-alert .probe-state {
+      color: var(--rose-400);
+    }
+
+    /* Radar / Sonar Interlock Scope */
+    .sonar-radar-box {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      background: rgba(8, 14, 28, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 0.75rem;
+    }
+
+    .radar-screen {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #022c22 0%, #064e3b 60%, #022c22 100%);
+      border: 2px solid var(--emerald-500);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.3);
+      flex-shrink: 0;
+    }
+
+    .radar-grid {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        radial-gradient(circle, transparent 30%, rgba(16, 185, 129, 0.3) 31%, transparent 32%),
+        radial-gradient(circle, transparent 65%, rgba(16, 185, 129, 0.3) 66%, transparent 67%),
+        linear-gradient(to right, transparent 49.5%, rgba(16, 185, 129, 0.4) 50%, transparent 50.5%),
+        linear-gradient(to bottom, transparent 49.5%, rgba(16, 185, 129, 0.4) 50%, transparent 50.5%);
+    }
+
+    .radar-sweep {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 55px;
+      height: 55px;
+      transform-origin: 0% 0%;
+      background: conic-gradient(from 0deg, rgba(52, 211, 153, 0.7) 0deg, transparent 60deg);
+      border-radius: 0 55px 0 0;
+      animation: sweepAnim 2.5s infinite linear;
+    }
+
+    @keyframes sweepAnim {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .radar-target {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+      transform: translate(-50%, -50%);
+      top: 35%;
+      left: 65%;
+      animation: targetPulse 1s infinite alternate;
+    }
+
+    @keyframes targetPulse {
+      0% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.8); }
+      100% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+    }
+
+    .sonar-metrics {
+      flex: 1;
+    }
+
+    .sonar-status-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+
+    .badge-clear {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--emerald-400);
+      color: var(--emerald-400);
+    }
+
+    .badge-lockout {
+      background: rgba(244, 63, 94, 0.2);
+      border: 1px solid var(--rose-400);
+      color: var(--rose-400);
+      animation: pulseAnim 1s infinite;
+    }
+
+    /* Hydro-Generator 50Hz Sync Bench */
+    .sync-box {
+      background: rgba(8, 14, 28, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 0.75rem;
+    }
+
+    .sync-dial-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .sync-meter {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 0.75rem;
+      text-align: center;
+    }
+
+    .sync-meter-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    .sync-meter-val {
+      font-family: var(--font-mono);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .sync-meter-bar-track {
+      height: 4px;
+      background: #1e293b;
+      border-radius: 2px;
+      margin-top: 0.5rem;
+      overflow: hidden;
+    }
+
+    .sync-meter-bar-fill {
+      height: 100%;
+      background: var(--emerald-400);
+      width: 50%;
+      transition: width 0.3s ease;
+    }
+
+    /* Interactive Sliders & Controls */
+    .control-row {
+      margin-top: 0.75rem;
+    }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.3rem;
+      font-size: 0.75rem;
+    }
+
+    .control-label {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .control-readout {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--cyan-400);
+    }
+
+    input[type=range].scada-slider {
+      width: 100%;
+      height: 6px;
+      -webkit-appearance: none;
+      background: #1e2e4f;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    input[type=range].scada-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--cyan-400);
+      cursor: pointer;
+      box-shadow: 0 0 8px var(--cyan-glow);
+      border: 2px solid #fff;
+    }
+
+    /* Viva Defense Accordion & Explanations */
+    .accordion-group {
+      margin-top: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .accordion-item {
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--bg-card);
+    }
+
+    .accordion-header {
+      padding: 0.65rem 0.9rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s ease;
+    }
+
+    .accordion-header:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .accordion-content {
+      padding: 0.75rem 0.9rem;
+      font-size: 0.73rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      border-top: 1px solid var(--border-subtle);
+      background: #0b1220;
+      display: none;
+    }
+
+    .accordion-item.open .accordion-content {
+      display: block;
+    }
+
+    .accordion-icon {
+      transition: transform 0.2s ease;
+    }
+
+    .accordion-item.open .accordion-icon {
+      transform: rotate(180deg);
+    }
+
+    /* Hardware Bridge Connectivity Modal / Drawer */
+    .hw-toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(13, 21, 39, 0.95);
+      border: 1px solid var(--border-glow);
+      backdrop-filter: blur(10px);
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      z-index: 99;
+      transform: translateY(120%);
+      transition: transform 0.3s cubic-bezier(0.1, 0.8, 0.2, 1);
+    }
+
+    .hw-toast.visible {
+      transform: translateY(0);
+    }
+
+    /* Bottom Status Strip */
+    footer.scada-footer {
+      background: #080d19;
+      border-top: 1px solid var(--border-subtle);
+      padding: 0.6rem 1.5rem;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+  </style>
+</head>
+<body class="scada-bg">
+
+  <!-- ========================================================================
+       TOP HEADER & HARDWARE/SIMULATION TOGGLES
+       ======================================================================== -->
+  <header class="scada-header">
+    <div class="brand-group">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 12h4l3 8 4-16 3 8h4"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>AquaGuard SCADA <span class="badge-viva">Viva Lab Edition</span></h1>
+        <p>Interactive Physics Simulation & Dual-Core ESP32 Demonstration Console</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="status-pill">
+        <span class="pulse-dot" id="systemPulse"></span>
+        <span id="systemModeLabel">PHYSICS ENGINE: ACTIVE (60 FPS)</span>
+      </div>
+
+      <button class="btn-toggle active-sim" id="btnSimMode" onclick="setOperationalMode('sim')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z"/></svg>
+        Physics Sim Mode
+      </button>
+
+      <button class="btn-toggle" id="btnHwMode" onclick="setOperationalMode('hw')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3"/></svg>
+        Live ESP32 Bridge
+      </button>
+
+      <button class="btn-toggle btn-audio" id="btnAudioMute" title="Toggle SCADA Sound Synthesizer" onclick="toggleAudio()">
+        <svg id="audioIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       REAL-LIFE SCENARIO SWITCHER STRIP
+       ======================================================================== -->
+  <div class="scenario-strip">
+    <div class="scenario-strip-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      Scenario Switcher:
+    </div>
+
+    <button class="scenario-btn active" id="btnScenNominal" onclick="loadScenario('nominal')">
+      🌊 1. Nominal Base Flow (50%)
+    </button>
+    <button class="scenario-btn" id="btnScenFlood" onclick="loadScenario('flood')">
+      ⛈️ 2. Monsoon Flash Flood Surge (100%)
+    </button>
+    <button class="scenario-btn" id="btnScenSonar" onclick="loadScenario('sonar')">
+      🛑 3. Sonar Proximity Lockout (Interlock)
+    </button>
+    <button class="scenario-btn" id="btnScenGas" onclick="loadScenario('gas')">
+      ☣️ 4. MQ-135 Toxic Gas Flare
+    </button>
+    <button class="scenario-btn" id="btnScenGrid" onclick="loadScenario('grid')">
+      ⚡ 5. Hydro-Turbine 50Hz Grid Sync
+    </button>
+    <button class="scenario-btn" id="btnScenFault" onclick="loadScenario('fault')">
+      ⚠️ 6. Wire Probe Open-Circuit Fault
+    </button>
+  </div>
+
+  <!-- ========================================================================
+       MAIN CONSOLE CONTENT AREA
+       ======================================================================== -->
+  <main class="main-container">
+    
+    <!-- LEFT COLUMN: CUTAWAY DAM VISUALIZATION & VIVA MATH ENGINE -->
+    <div class="left-column" style="display:flex; flex-direction:column; gap:1.25rem;">
+      
+      <div class="scada-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            Interactive Dam Hydraulic Cutaway (Vector Physics Model)
+          </div>
+          <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim);" id="damStateReadout">
+            HEAD: 28.5 m | DISCHARGE: 142.6 m³/s
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <div class="cutaway-stage">
+            <!-- Stage Live Overlays -->
+            <div class="stage-hud">
+              <div class="hud-tag" id="hudReservoir">
+                RESERVOIR HEAD: <strong id="hudResHead">68.4%</strong>
+              </div>
+              <div class="hud-tag" id="hudGateAngle">
+                RADIAL SPILLWAY: <strong id="hudGateDeg">45° (50% OPEN)</strong>
+              </div>
+              <div class="hud-tag" id="hudInterlockBadge">
+                SAFETY INTERLOCK: <strong style="color:var(--emerald-400);">CLEAR / DISENGAGED</strong>
+              </div>
+              <div class="hud-tag alert-tag" id="hudHazardBanner" style="display: none;">
+                ⚠️ EMERGENCY PROTOCOL ENGAGED
+              </div>
+            </div>
+
+            <!-- DYNAMIC VECTOR CUTAWAY SVG -->
+            <svg id="damSvg" viewBox="0 0 920 480">
+              <defs>
+                <!-- Water gradients -->
+                <linearGradient id="reservoirGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#0891b2" stop-opacity="0.85"/>
+                  <stop offset="60%" stop-color="#0e7490" stop-opacity="0.95"/>
+                  <stop offset="100%" stop-color="#164e63" stop-opacity="1"/>
+                </linearGradient>
+
+                <linearGradient id="concreteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#334155"/>
+                  <stop offset="50%" stop-color="#1e293b"/>
+                  <stop offset="100%" stop-color="#0f172a"/>
+                </linearGradient>
+
+                <linearGradient id="spillwayWaterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.95"/>
+                  <stop offset="100%" stop-color="#0284c7" stop-opacity="0.8"/>
+                </linearGradient>
+
+                <!-- Filter for glow effects -->
+                <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+
+              <!-- SKY & BACKGROUND -->
+              <rect x="0" y="0" width="920" height="480" fill="#080e1c"/>
+              
+              <!-- Distant Mountain Profile -->
+              <path d="M 0,220 L 140,150 L 290,210 L 460,130 L 610,190 L 780,120 L 920,180 L 920,480 L 0,480 Z" fill="#0c162c" opacity="0.4"/>
+
+              <!-- BEDROCK FOUNDATION -->
+              <path d="M 0,380 L 920,380 L 920,480 L 0,480 Z" fill="#090f1d"/>
+              <line x1="0" y1="380" x2="920" y2="380" stroke="#1e293b" stroke-width="2" stroke-dasharray="8 4"/>
+
+              <!-- ==============================================
+                   RESERVOIR WATER BODY (Dynamic polygon)
+                   ============================================== -->
+              <g id="reservoirWaterGroup">
+                <!-- Main reservoir water mass -->
+                <path id="svgReservoirWater" d="M 0,220 L 320,220 L 320,380 L 0,380 Z" fill="url(#reservoirGrad)"/>
+                
+                <!-- Animated surface wave -->
+                <path id="svgReservoirSurface" d="M 0,220 Q 80,216 160,220 T 320,220" fill="none" stroke="#67e8f9" stroke-width="3" opacity="0.85"/>
+              </g>
+
+              <!-- 4-PROBE WIRE RIG SUSPENDED IN RESERVOIR -->
+              <g id="probeRigGroup" opacity="0.95">
+                <line x1="140" y1="80" x2="140" y2="370" stroke="#475569" stroke-width="2"/>
+                <!-- Support Catwalk Arm -->
+                <line x1="110" y1="80" x2="170" y2="80" stroke="#94a3b8" stroke-width="3"/>
+                
+                <!-- Probe 1 (Low: 25% height - y ~ 340) -->
+                <circle id="probeNode1" cx="140" cy="340" r="5" fill="#10b981" stroke="#fff" stroke-width="1.5"/>
+                <text x="152" y="344" fill="#94a3b8" font-size="10" font-family="monospace">P1 (25% LOW)</text>
+
+                <!-- Probe 2 (Mid: 50% height - y ~ 300) -->
+                <circle id="probeNode2" cx="140" cy="300" r="5" fill="#10b981" stroke="#fff" stroke-width="1.5"/>
+                <text x="152" y="304" fill="#94a3b8" font-size="10" font-family="monospace">P2 (50% MID)</text>
+
+                <!-- Probe 3 (High: 75% height - y ~ 260) -->
+                <circle id="probeNode3" cx="140" cy="260" r="5" fill="#10b981" stroke="#fff" stroke-width="1.5"/>
+                <text x="152" y="264" fill="#94a3b8" font-size="10" font-family="monospace">P3 (75% HIGH)</text>
+
+                <!-- Probe 4 (Danger: 95% height - y ~ 225) -->
+                <circle id="probeNode4" cx="140" cy="225" r="5" fill="#64748b" stroke="#fff" stroke-width="1.5"/>
+                <text x="152" y="229" fill="#94a3b8" font-size="10" font-family="monospace">P4 (95% DANGER)</text>
+              </g>
+
+              <!-- ==============================================
+                   CONCRETE GRAVITY DAM MONOLITH PROFILE
+                   ============================================== -->
+              <g id="damStructureGroup">
+                <!-- Upstream Face (Vertical), Crest, Ogee Spillway Curve, Downstream Apron -->
+                <path d="M 320,380 L 320,110 L 380,110 Q 420,110 460,170 Q 520,270 590,340 Q 640,380 720,380 L 720,440 L 320,440 Z" fill="url(#concreteGrad)" stroke="#475569" stroke-width="2"/>
+
+                <!-- Catwalk / Gantry Bridge on Crest -->
+                <rect x="300" y="90" width="100" height="20" fill="#1e293b" stroke="#64748b" stroke-width="1.5"/>
+                <!-- Catwalk Railing -->
+                <line x1="300" y1="80" x2="400" y2="80" stroke="#94a3b8" stroke-width="2"/>
+                <line x1="320" y1="80" x2="320" y2="90" stroke="#94a3b8" stroke-width="1.5"/>
+                <line x1="350" y1="80" x2="350" y2="90" stroke="#94a3b8" stroke-width="1.5"/>
+                <line x1="380" y1="80" x2="380" y2="90" stroke="#94a3b8" stroke-width="1.5"/>
+
+                <!-- Inspection Gallery Tunnel inside Dam -->
+                <circle cx="380" cy="280" r="14" fill="#0b1324" stroke="#334155" stroke-width="2"/>
+                <text x="380" y="284" fill="#64748b" font-size="8" text-anchor="middle" font-family="monospace">GALLERY</text>
+
+                <!-- Hydro-Turbine Penstock Intake Tunnel -->
+                <path d="M 320,330 L 440,330 L 510,380 L 480,380 L 420,345 L 320,345 Z" fill="#0a101d" stroke="#0ea5e9" stroke-width="1.5"/>
+                <text x="370" y="340" fill="#38bdf8" font-size="8" font-family="monospace">PENSTOCK</text>
+              </g>
+
+              <!-- SONAR SENSOR RIG & RADAR CONE -->
+              <g id="sonarRigGroup">
+                <!-- Transducer Mount -->
+                <rect x="300" y="115" width="16" height="10" fill="#0284c7" stroke="#38bdf8" stroke-width="1"/>
+                <!-- Sonar Acoustic Pulse Cones -->
+                <path id="sonarCone" d="M 300,125 L 210,230 L 250,230 Z" fill="rgba(6, 182, 212, 0.15)" stroke="rgba(34, 211, 238, 0.4)" stroke-dasharray="4 2"/>
+                <!-- Echo wavefront circle -->
+                <circle id="sonarWave" cx="280" cy="140" r="10" fill="none" stroke="#22d3ee" stroke-width="2" class="sonar-ping-wave"/>
+                <!-- Sonar obstacle (debris/person) -->
+                <g id="sonarObstacle" transform="translate(230, 220)" style="cursor: pointer;">
+                  <rect x="-12" y="-12" width="24" height="24" rx="4" fill="#ef4444" stroke="#fff" stroke-width="1.5"/>
+                  <text x="0" y="4" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">DEBRIS</text>
+                </g>
+              </g>
+
+              <!-- ==============================================
+                   RADIAL TAINTER SPILLWAY GATE & HYDRAULIC ARM
+                   ============================================== -->
+              <g id="radialGateGroup">
+                <!-- Trunnion Pin Pivot -->
+                <circle id="trunnionPin" cx="440" cy="170" r="7" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
+                
+                <!-- Radial Structural Arm (pivoting from 440,170) -->
+                <g id="rotatingGateArm" transform="rotate(-20 440 170)">
+                  <line x1="440" y1="170" x2="375" y2="120" stroke="#fbbf24" stroke-width="6"/>
+                  <line x1="440" y1="170" x2="385" y2="135" stroke="#d97706" stroke-width="3"/>
+                  <!-- Curved Gate Face Blade -->
+                  <path d="M 370,105 Q 380,125 390,145" fill="none" stroke="#ef4444" stroke-width="8" stroke-linecap="round"/>
+                </g>
+              </g>
+
+              <!-- ==============================================
+                   SPILLWAY DISCHARGE WATER CHUTE & HYDRAULIC JUMP
+                   ============================================== -->
+              <g id="spillwayWaterFlow" opacity="0.9">
+                <!-- Fast flowing chute jet -->
+                <path id="waterJetFlow" d="M 385,125 Q 430,135 470,185 Q 525,275 595,345 Q 640,380 730,380 L 730,395 Q 630,395 585,355 Q 515,285 455,195 Q 420,150 380,140 Z" fill="url(#spillwayWaterGrad)"/>
+                
+                <!-- Downstream Hydraulic Jump & Stilling Basin Foaming Water -->
+                <g id="hydraulicJumpGroup">
+                  <!-- Tailrace water pool -->
+                  <rect x="710" y="340" width="210" height="40" fill="url(#reservoirGrad)"/>
+                  <!-- Aerated turbulent foam -->
+                  <path id="foamWave" class="foam-anim" d="M 690,342 Q 720,332 750,342 T 810,342 T 870,342 T 920,342 L 920,355 L 690,355 Z" fill="#ffffff" opacity="0.85"/>
+                  <circle cx="730" cy="346" r="3" fill="#fff" opacity="0.8"/>
+                  <circle cx="755" cy="343" r="4" fill="#fff" opacity="0.6"/>
+                  <circle cx="790" cy="348" r="2.5" fill="#fff" opacity="0.9"/>
+                  <circle cx="830" cy="345" r="3.5" fill="#fff" opacity="0.7"/>
+                </g>
+              </g>
+
+              <!-- ==============================================
+                   FRANCIS TURBINE & GENERATOR ROTOR
+                   ============================================== -->
+              <g id="turbineRotorGroup" transform="translate(515, 380)">
+                <!-- Turbine casing -->
+                <circle cx="0" cy="0" r="22" fill="#0f172a" stroke="#10b981" stroke-width="2"/>
+                <!-- Rotating runner wheel -->
+                <g id="turbineBlades">
+                  <line x1="-16" y1="0" x2="16" y2="0" stroke="#34d399" stroke-width="3"/>
+                  <line x1="0" y1="-16" x2="0" y2="16" stroke="#34d399" stroke-width="3"/>
+                  <line x1="-11" y1="-11" x2="11" y2="11" stroke="#34d399" stroke-width="3"/>
+                  <line x1="-11" y1="11" x2="11" y2="-11" stroke="#34d399" stroke-width="3"/>
+                  <circle cx="0" cy="0" r="6" fill="#047857"/>
+                </g>
+                <text x="0" y="32" fill="#34d399" font-size="8" font-family="monospace" text-anchor="middle">50Hz TURBINE</text>
+              </g>
+
+              <!-- DOWNSTREAM DRAINAGE / IRRIGATION SUMP PUMP -->
+              <g id="drainagePumpGroup" transform="translate(860, 365)">
+                <rect x="-15" y="-12" width="30" height="24" rx="4" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+                <!-- Rotating impeller icon -->
+                <circle cx="0" cy="0" r="6" fill="none" stroke="#22d3ee" stroke-width="2" stroke-dasharray="4 2"/>
+                <text x="0" y="22" fill="#94a3b8" font-size="7" font-family="monospace" text-anchor="middle">PUMP 1</text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- VIVA DEFENSE CALCULATIONS ENGINE HUD -->
+          <div class="viva-metrics-grid">
+            
+            <div class="viva-card cyan-border">
+              <div class="viva-title">Spillway Discharge (Francis Formula)</div>
+              <div class="viva-formula">Q = Cd · L · H^(3/2) · (θ/100)</div>
+              <div class="viva-value">
+                <span id="calcDischarge">142.6</span>
+                <span class="viva-unit">m³/s</span>
+              </div>
+              <div class="viva-note">Cd=2.15, Crest Length=12.5m, Gate θ=50%</div>
+            </div>
+
+            <div class="viva-card emerald-border">
+              <div class="viva-title">Hydro-Electric Generation</div>
+              <div class="viva-formula">P = η · ρ · g · Q_pen · H</div>
+              <div class="viva-value">
+                <span id="calcPower">2,480</span>
+                <span class="viva-unit">kW</span>
+              </div>
+              <div class="viva-note">Turbine efficiency η=89.5%, Net Head=28.5m</div>
+            </div>
+
+            <div class="viva-card amber-border">
+              <div class="viva-title">Hydrostatic Thrust Force</div>
+              <div class="viva-formula">F_h = 0.5 · ρ · g · H² · W</div>
+              <div class="viva-value">
+                <span id="calcThrust">42.8</span>
+                <span class="viva-unit">MN</span>
+              </div>
+              <div class="viva-note">Overturning safety factor: SF = 2.45 (Stable)</div>
+            </div>
+
+            <div class="viva-card rose-border">
+              <div class="viva-title">Gate Interlock & Proximity</div>
+              <div class="viva-formula">Interlock = (Dist &gt; 40cm) &amp; (PPM &lt; 2800)</div>
+              <div class="viva-value">
+                <span id="calcInterlockState" style="color:var(--emerald-400); font-size:1.1rem;">NOMINAL</span>
+              </div>
+              <div class="viva-note">Sonar Obstacle: 125 cm | Air Quality: 420 PPM</div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- VIVA DEFENSE & ARCHITECTURE EXPLAINER ACCORDION -->
+      <div class="scada-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            Viva Defense Technical Explainer (Oral Exam Knowledge Base)
+          </div>
+          <span style="font-size:0.7rem; color:var(--cyan-400); font-family:var(--font-mono);">CLICK TO EXPAND</span>
+        </div>
+        <div class="panel-body" style="padding: 0.75rem 1.25rem;">
+          <div class="accordion-group">
+            
+            <div class="accordion-item open">
+              <div class="accordion-header" onclick="toggleAccordion(this)">
+                <span>1. Dual-Core FreeRTOS Architecture & Zero-Block Determinism</span>
+                <svg class="accordion-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <div class="accordion-content">
+                <strong>Why doesn't the web server freeze the emergency gate?</strong><br>
+                The ESP32 runs a dual-core Xtensa 32-bit LX6 processor. <em>Core 1</em> runs the real-time sensor loop, conductivity probe debounce, ultrasonic pulse timing, and emergency interlock FSM without any blocking delays. <em>Core 0</em> runs the asynchronous HTTP/WebSocket server (<code>ESPAsyncWebServer</code>). Even if a Wi-Fi client disconnects or floods HTTP requests, Core 1 operates deterministically with zero jitter.
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion(this)">
+                <span>2. Water Level Sensing: 4-Level Conductivity vs Ultrasonic Sensor</span>
+                <svg class="accordion-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <div class="accordion-content">
+                <strong>Why use both conductivity wires and sonar?</strong><br>
+                Conductivity probes provide an infallible hardware discrete threshold (Low, Mid, High, Danger) immune to acoustic surface ripples, steam, or floating debris. The HC-SR04 sonar transducer provides continuous millimetric distance telemetry and functions as a forward-facing obstacle & intrusion lockout interlock before opening heavy radial gates.
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion(this)">
+                <span>3. Spillway Gate Hydraulic Equation & Discharge Curve</span>
+                <svg class="accordion-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <div class="accordion-content">
+                The spillway obeys the standard weir discharge relation: <code>Q = C_d · L · H^(3/2)</code> modulated by the radial tainter opening percentage <code>θ / 100</code>. When reservoir water touches the top probe (Danger P4), the FSM triggers a staged servo trapezoidal ramp profile to avoid downstream surge wave erosion in the stilling basin.
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion(this)">
+                <span>4. Fail-Safe Interlock Matrix & Sensor Fault Isolation</span>
+                <svg class="accordion-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <div class="accordion-content">
+                If the ultrasonic sensor reports &lt; 40 cm (floating debris or maintenance boat in the spillway mouth), the servo gate is immediately locked in its current position with an audible alarm. If an open-circuit fault occurs (probe wire disconnected while higher probes are wet), the firmware detects an illogical state and falls back to ultrasonic echo depth.
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: INTERACTIVE TEST BENCHES & SCADA CONTROLS -->
+    <div class="right-column" style="display:flex; flex-direction:column; gap:1.25rem;">
+      
+      <!-- TEST BENCH 1: 4-PROBE WATER MATRIX -->
+      <div class="scada-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            1. 4-Probe Water Level Conductivity Bench
+          </div>
+          <span style="font-size:0.7rem; font-family:var(--font-mono); color:var(--cyan-400);">DISCRETE LOGIC</span>
+        </div>
+        <div class="panel-body">
+          <div class="control-header">
+            <span class="control-label">Reservoir Pool Elevation:</span>
+            <span class="control-readout" id="sliderLevelVal">68.0 % (27.2 m)</span>
+          </div>
+          <input type="range" min="0" max="100" value="68" class="scada-slider" id="sliderLevel" oninput="onWaterLevelChange(this.value)">
+
+          <div class="probe-matrix">
+            <div class="probe-card submerged" id="cardP1" onclick="toggleProbeManual(1)">
+              <div class="probe-dot"></div>
+              <div class="probe-name">PROBE 1</div>
+              <div class="probe-gpio">GPIO 34</div>
+              <div class="probe-state">25% (LOW)</div>
+            </div>
+
+            <div class="probe-card submerged" id="cardP2" onclick="toggleProbeManual(2)">
+              <div class="probe-dot"></div>
+              <div class="probe-name">PROBE 2</div>
+              <div class="probe-gpio">GPIO 35</div>
+              <div class="probe-state">50% (MID)</div>
+            </div>
+
+            <div class="probe-card" id="cardP3" onclick="toggleProbeManual(3)">
+              <div class="probe-dot"></div>
+              <div class="probe-name">PROBE 3</div>
+              <div class="probe-gpio">GPIO 32</div>
+              <div class="probe-state">75% (HIGH)</div>
+            </div>
+
+            <div class="probe-card" id="cardP4" onclick="toggleProbeManual(4)">
+              <div class="probe-dot"></div>
+              <div class="probe-name">PROBE 4</div>
+              <div class="probe-gpio">GPIO 33</div>
+              <div class="probe-state">95% (DANGER)</div>
+            </div>
+          </div>
+          <div style="font-size: 0.68rem; color: var(--text-dim); margin-top: 0.5rem; text-align: center;">
+            💡 Click any probe card to simulate manual open-circuit / corrosion fault
+          </div>
+        </div>
+      </div>
+
+      <!-- TEST BENCH 2: SONAR RADAR & INTERLOCK -->
+      <div class="scada-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16.2 7.8l-2 2-4-4"/><circle cx="12" cy="12" r="4"/></svg>
+            2. Ultrasonic Sonar PPI Radar & Spillway Interlock
+          </div>
+          <span style="font-size:0.7rem; font-family:var(--font-mono); color:var(--emerald-400);">SAFETY INTERLOCK</span>
+        </div>
+        <div class="panel-body">
+          <div class="sonar-radar-box">
+            <div class="radar-screen">
+              <div class="radar-grid"></div>
+              <div class="radar-sweep"></div>
+              <div class="radar-target" id="radarBlip"></div>
+            </div>
+
+            <div class="sonar-metrics">
+              <div class="sonar-status-badge badge-clear" id="badgeSonarStatus">
+                SAFETY CLEAR (&gt;40cm)
+              </div>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-bottom:0.25rem;">
+                Target Distance: <strong id="sonarDistVal" style="color:#fff; font-family:var(--font-mono); font-size:1rem;">125 cm</strong>
+              </div>
+              <div style="font-size:0.68rem; color:var(--text-dim);">
+                Echo Pulse Time: <span id="sonarPulseTime" style="font-family:var(--font-mono);">7.27 ms</span> | Lockout Threshold: 40 cm
+              </div>
+            </div>
+          </div>
+
+          <div class="control-row">
+            <div class="control-header">
+              <span class="control-label">Move Obstacle Distance:</span>
+              <span class="control-readout" id="sliderSonarVal">125 cm</span>
+            </div>
+            <input type="range" min="10" max="300" value="125" class="scada-slider" id="sliderSonar" oninput="onSonarChange(this.value)">
+          </div>
+        </div>
+      </div>
+
+      <!-- TEST BENCH 3: RADIAL SPILLWAY GATE & HYDRO-TURBINE -->
+      <div class="scada-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+            3. Radial Tainter Gate & 50Hz Turbine Governor
+          </div>
+          <span style="font-size:0.7rem; font-family:var(--font-mono); color:var(--cyan-400);">ACTUATORS</span>
+        </div>
+        <div class="panel-body">
+          <div class="control-row">
+            <div class="control-header">
+              <span class="control-label">Spillway Gate Angle:</span>
+              <span class="control-readout" id="sliderGateVal">45° (50%)</span>
+            </div>
+            <input type="range" min="0" max="90" value="45" class="scada-slider" id="sliderGate" oninput="onGateChange(this.value)">
+          </div>
+
+          <div class="sync-box">
+            <div class="sync-dial-row">
+              <div class="sync-meter">
+                <div class="sync-meter-label">Turbine Frequency</div>
+                <div class="sync-meter-val" id="syncFreqVal">50.02 <span style="font-size:0.75rem; color:var(--text-dim);">Hz</span></div>
+                <div class="sync-meter-bar-track">
+                  <div class="sync-meter-bar-fill" id="freqBar"></div>
+                </div>
+              </div>
+              <div class="sync-meter">
+                <div class="sync-meter-label">Generator RPM</div>
+                <div class="sync-meter-val" id="syncRpmVal">1500 <span style="font-size:0.75rem; color:var(--text-dim);">RPM</span></div>
+                <div class="sync-meter-bar-track">
+                  <div class="sync-meter-bar-fill" id="rpmBar"></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.72rem;">
+              <span style="color:var(--text-muted);">Grid Synchronization Status:</span>
+              <span id="gridSyncLabel" style="color:var(--emerald-400); font-weight:700; font-family:var(--font-mono);">
+                ● SYNCHRONIZED (0.0° Phase Err)
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEST BENCH 4: MQ-135 TOXIC GAS & EXHAUST SCRUBBER -->
+      <div class="scada-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            4. MQ-135 Gas Telemetry & Exhaust Scrubber
+          </div>
+          <span style="font-size:0.7rem; font-family:var(--font-mono); color:var(--amber-400);">ENVIRONMENTAL</span>
+        </div>
+        <div class="panel-body">
+          <div class="control-row">
+            <div class="control-header">
+              <span class="control-label">Simulate Air Quality / Toxic Vapor:</span>
+              <span class="control-readout" id="sliderGasVal">420 PPM (Clean Air)</span>
+            </div>
+            <input type="range" min="100" max="4000" value="420" class="scada-slider" id="sliderGas" oninput="onGasChange(this.value)">
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.75rem; background:var(--bg-card); padding:0.6rem 0.85rem; border-radius:6px; border:1px solid var(--border-subtle);">
+            <div>
+              <div style="font-size:0.75rem; font-weight:700; color:#fff;" id="gasStateText">Normal Environmental Baseline</div>
+              <div style="font-size:0.68rem; color:var(--text-muted);">Threshold: &gt; 2800 PPM triggers siren &amp; exhaust blowers</div>
+            </div>
+            <div id="scrubberBadge" style="font-size:0.68rem; font-family:var(--font-mono); font-weight:700; color:var(--text-dim); background:#1e293b; padding:3px 8px; border-radius:4px;">
+              BLOWERS OFF
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ========================================================================
+       LIVE ESP32 BRIDGE POPUP NOTIFICATION
+       ======================================================================== -->
+  <div class="hw-toast" id="hwToast">
+    <div style="width:10px; height:10px; border-radius:50%; background:var(--emerald-400); box-shadow:0 0 8px var(--emerald-400);"></div>
+    <div>
+      <div style="font-size:0.8rem; font-weight:700; color:#fff;" id="hwToastTitle">ESP32 Live Bridge Active</div>
+      <div style="font-size:0.72rem; color:var(--text-muted);" id="hwToastMsg">Connected to ws://192.168.4.1/ws (Real-time telemetry)</div>
+    </div>
+    <button onclick="dismissHwToast()" style="background:transparent; border:none; color:var(--text-dim); cursor:pointer; font-size:1rem; margin-left:1rem;">✕</button>
+  </div>
+
+  <!-- ========================================================================
+       BOTTOM TELEMETRY STATUS FOOTER
+       ======================================================================== -->
+  <footer class="scada-footer">
+    <div>
+      AQUAGUARD SCADA SYSTEM v2.4.0 &bull; DUAL-CORE XTENSA LX6 &bull; FREERTOS DETERMINISTIC KERNEL
+    </div>
+    <div style="display:flex; gap:1.5rem;">
+      <span>LATENCY: <strong id="footerLatency" style="color:var(--emerald-400);">1.2 ms</strong></span>
+      <span>PACKETS: <strong id="footerPackets" style="color:var(--cyan-400);">18,420</strong></span>
+      <span>TIME: <strong id="footerClock">12:00:00</strong></span>
+    </div>
+  </footer>
+
+  <!-- ========================================================================
+       INTERACTIVE PHYSICS, AUDIO SYNTHESIZER & BRIDGE JAVASCRIPT
+       ======================================================================== -->
+  <script>
+    // State machine object
+    const state = {
+      mode: 'sim',            // 'sim' or 'hw'
+      waterLevel: 68.0,       // 0 to 100 percent
+      gateAngle: 45,          // 0 to 90 degrees
+      sonarDist: 125,         // 10 to 300 cm
+      gasPpm: 420,            // PPM
+      audioEnabled: false,
+      probes: [true, true, false, false], // P1, P2, P3, P4
+      manualProbeOverride: false,
+      turbineActive: true,
+      pumpActive: false,
+      interlockLocked: false,
+      hazardActive: false,
+      ws: null,
+      packetCount: 0
+    };
+
+    // Web Audio API Synthesizer Context
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function toggleAudio() {
+      initAudio();
+      state.audioEnabled = !state.audioEnabled;
+      const btn = document.getElementById('btnAudioMute');
+      if (state.audioEnabled) {
+        btn.style.color = 'var(--cyan-400)';
+        btn.style.borderColor = 'var(--cyan-400)';
+        playTone(880, 0.1, 'sine');
+      } else {
+        btn.style.color = 'var(--text-muted)';
+        btn.style.borderColor = 'var(--border-subtle)';
+      }
+    }
+
+    function playTone(freq, duration, type = 'sine') {
+      if (!state.audioEnabled || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // SCADA Audio Alerts
+    function playAlarmSiren() {
+      if (!state.audioEnabled || !audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      const now = audioCtx.currentTime;
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.linearRampToValueAtTime(1100, now + 0.3);
+      osc.frequency.linearRampToValueAtTime(600, now + 0.6);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.6);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.6);
+    }
+
+    // ========================================================================
+    // PHYSICS CALCULATION & GRAPHICS RENDER LOOP
+    // ========================================================================
+    function updatePhysics() {
+      // 1. Water surface coordinates in SVG
+      // Y range: 380 (0% empty) to 130 (100% full)
+      const waterY = 380 - (state.waterLevel / 100) * 250;
+      
+      const resWater = document.getElementById('svgReservoirWater');
+      resWater.setAttribute('d', `M 0,${waterY} L 320,${waterY} L 320,380 L 0,380 Z`);
+      
+      const resSurface = document.getElementById('svgReservoirSurface');
+      resSurface.setAttribute('d', `M 0,${waterY} Q 80,${waterY - 3} 160,${waterY} T 320,${waterY}`);
+
+      // 2. Automatic Probe Logic (unless manual fault simulation override)
+      if (!state.manualProbeOverride) {
+        state.probes[0] = state.waterLevel >= 25;
+        state.probes[1] = state.waterLevel >= 50;
+        state.probes[2] = state.waterLevel >= 75;
+        state.probes[3] = state.waterLevel >= 95;
+      }
+
+      // Update probe UI cards & SVG nodes
+      for (let i = 1; i <= 4; i++) {
+        const isSub = state.probes[i - 1];
+        const card = document.getElementById(`cardP${i}`);
+        const node = document.getElementById(`probeNode${i}`);
+        
+        if (i === 4 && isSub) {
+          card.className = 'probe-card danger-alert';
+          node.setAttribute('fill', '#f43f5e');
+          node.setAttribute('stroke', '#fff');
+        } else if (isSub) {
+          card.className = 'probe-card submerged';
+          node.setAttribute('fill', '#06b6d4');
+          node.setAttribute('stroke', '#fff');
+        } else {
+          card.className = 'probe-card';
+          node.setAttribute('fill', '#334155');
+          node.setAttribute('stroke', '#64748b');
+        }
+      }
+
+      // 3. Radial Gate Rotation & Visual Opening
+      const gateArm = document.getElementById('rotatingGateArm');
+      // 0 deg = closed (-20 deg rotate), 90 deg = open (+25 deg rotate)
+      const rotationAngle = -20 + (state.gateAngle / 90) * 45;
+      gateArm.setAttribute('transform', `rotate(${rotationAngle} 440 170)`);
+
+      // 4. Spillway Discharge Chute Flow
+      const spillFlow = document.getElementById('spillwayWaterFlow');
+      const foamJump = document.getElementById('hydraulicJumpGroup');
+      if (state.gateAngle > 5 && state.waterLevel > 40) {
+        spillFlow.style.display = 'block';
+        foamJump.style.display = 'block';
+        const flowOpacity = Math.min(1, state.gateAngle / 90 + 0.2);
+        spillFlow.setAttribute('opacity', flowOpacity);
+      } else {
+        spillFlow.style.display = 'none';
+        foamJump.style.display = 'none';
+      }
+
+      // 5. Ultrasonic Sonar Interlock Check
+      const isSonarBlocked = state.sonarDist < 40;
+      const isGasDanger = state.gasPpm > 2800;
+      state.interlockLocked = isSonarBlocked;
+      state.hazardActive = isGasDanger || (state.waterLevel >= 95);
+
+      const interlockBadge = document.getElementById('hudInterlockBadge');
+      const calcInterlock = document.getElementById('calcInterlockState');
+      const badgeSonar = document.getElementById('badgeSonarStatus');
+      const hudHazard = document.getElementById('hudHazardBanner');
+
+      if (isSonarBlocked) {
+        interlockBadge.innerHTML = 'SAFETY INTERLOCK: <strong style="color:var(--rose-400);">LOCKED (SONAR &lt; 40cm)</strong>';
+        calcInterlock.textContent = 'LOCKOUT (OBSTACLE)';
+        calcInterlock.style.color = 'var(--rose-400)';
+        badgeSonar.className = 'sonar-status-badge badge-lockout';
+        badgeSonar.textContent = 'PROXIMITY LOCKOUT (<40cm)';
+      } else {
+        interlockBadge.innerHTML = 'SAFETY INTERLOCK: <strong style="color:var(--emerald-400);">CLEAR / DISENGAGED</strong>';
+        calcInterlock.textContent = 'NOMINAL (CLEAR)';
+        calcInterlock.style.color = 'var(--emerald-400)';
+        badgeSonar.className = 'sonar-status-badge badge-clear';
+        badgeSonar.textContent = 'SAFETY CLEAR (>40cm)';
+      }
+
+      // Sonar Radar Target position
+      const radarBlip = document.getElementById('radarBlip');
+      const targetPercent = Math.min(100, Math.max(15, (state.sonarDist / 300) * 85));
+      radarBlip.style.top = `${targetPercent * 0.7}%`;
+      radarBlip.style.left = `${targetPercent * 0.9}%`;
+
+      // Sonar Target Obstacle in SVG
+      const sonarObs = document.getElementById('sonarObstacle');
+      const obsX = 300 - (state.sonarDist / 300) * 120;
+      sonarObs.setAttribute('transform', `translate(${obsX}, 220)`);
+
+      // 6. Hazard Alarm Banner
+      if (state.hazardActive) {
+        hudHazard.style.display = 'flex';
+        if (state.waterLevel >= 95) {
+          hudHazard.textContent = '⚠️ EMERGENCY: CREST OVERTOPPING RISK';
+        } else {
+          hudHazard.textContent = '☣️ EMERGENCY: HAZMAT GAS FLARE DETECTED';
+        }
+      } else {
+        hudHazard.style.display = 'none';
+      }
+
+      // 7. Gas Scrubber Status
+      const scrubber = document.getElementById('scrubberBadge');
+      const gasState = document.getElementById('gasStateText');
+      if (state.gasPpm > 2800) {
+        scrubber.style.background = 'rgba(244, 63, 94, 0.2)';
+        scrubber.style.color = 'var(--rose-400)';
+        scrubber.textContent = 'BLOWERS ACTIVE (MAX 100%)';
+        gasState.textContent = 'Hazardous Toxic Concentration!';
+        gasState.style.color = 'var(--rose-400)';
+      } else if (state.gasPpm > 1200) {
+        scrubber.style.background = 'rgba(245, 158, 11, 0.2)';
+        scrubber.style.color = 'var(--amber-400)';
+        scrubber.textContent = 'BLOWERS LOW (30%)';
+        gasState.textContent = 'Moderate Elevated Concentration';
+        gasState.style.color = 'var(--amber-400)';
+      } else {
+        scrubber.style.background = '#1e293b';
+        scrubber.style.color = 'var(--text-dim)';
+        scrubber.textContent = 'BLOWERS OFF';
+        gasState.textContent = 'Normal Environmental Baseline';
+        gasState.style.color = '#fff';
+      }
+
+      // 8. Viva Defense Engineering Mathematical Calculations
+      // Head H in meters (assume full reservoir = 40m)
+      const headMeters = (state.waterLevel / 100) * 40;
+      
+      // Spillway discharge: Q = Cd * L * H^1.5 * (gateAngle/90)
+      const cd = 2.15;
+      const crestLength = 12.5; // meters
+      const gateRatio = state.gateAngle / 90;
+      const discharge = (state.waterLevel > 30) 
+        ? (cd * crestLength * Math.pow(Math.max(0, headMeters - 12), 1.5) * gateRatio)
+        : 0;
+      
+      document.getElementById('calcDischarge').textContent = discharge.toFixed(1);
+
+      // Hydro-Electric Power: P = eta * rho * g * Q_penstock * H
+      const penstockQ = state.turbineActive ? (4.2 * Math.sqrt(headMeters)) : 0;
+      const powerKw = (0.895 * 1000 * 9.81 * penstockQ * headMeters) / 1000;
+      document.getElementById('calcPower').textContent = Math.round(powerKw).toLocaleString();
+
+      // Hydrostatic Thrust Force: F_h = 0.5 * rho * g * H^2 * W (MN)
+      const thrustMN = (0.5 * 1000 * 9.81 * Math.pow(headMeters, 2) * 25) / 1e6;
+      document.getElementById('calcThrust').textContent = thrustMN.toFixed(1);
+
+      // HUD Text values
+      document.getElementById('hudResHead').textContent = `${state.waterLevel.toFixed(1)}% (${headMeters.toFixed(1)} m)`;
+      document.getElementById('hudGateDeg').textContent = `${state.gateAngle}° (${Math.round(gateRatio * 100)}% OPEN)`;
+      document.getElementById('damStateReadout').textContent = `HEAD: ${headMeters.toFixed(1)} m | DISCHARGE: ${discharge.toFixed(1)} m³/s | POWER: ${Math.round(powerKw)} kW`;
+
+      // Update Turbine Governor Visuals
+      const freq = 50.0 + (Math.sin(Date.now() / 1500) * 0.04);
+      const rpm = 1500 + Math.round(Math.sin(Date.now() / 1500) * 3);
+      document.getElementById('syncFreqVal').innerHTML = `${freq.toFixed(2)} <span style="font-size:0.75rem; color:var(--text-dim);">Hz</span>`;
+      document.getElementById('syncRpmVal').innerHTML = `${rpm} <span style="font-size:0.75rem; color:var(--text-dim);">RPM</span>`;
+    }
+
+    // Continuous Animation Loop for Turbine Runner & Water Physics
+    let turbineAngle = 0;
+    function animationLoop() {
+      if (state.turbineActive) {
+        turbineAngle = (turbineAngle + 6) % 360;
+        const blades = document.getElementById('turbineBlades');
+        if (blades) {
+          blades.setAttribute('transform', `rotate(${turbineAngle})`);
+        }
+      }
+
+      state.packetCount++;
+      document.getElementById('footerPackets').textContent = state.packetCount.toLocaleString();
+
+      requestAnimationFrame(animationLoop);
+    }
+    requestAnimationFrame(animationLoop);
+
+    // Run physics update every 60ms
+    setInterval(updatePhysics, 60);
+
+    // ========================================================================
+    // INTERACTIVE USER CONTROL HANDLERS
+    // ========================================================================
+    function onWaterLevelChange(val) {
+      state.manualProbeOverride = false;
+      state.waterLevel = parseFloat(val);
+      const headMeters = (state.waterLevel / 100) * 40;
+      document.getElementById('sliderLevelVal').textContent = `${state.waterLevel.toFixed(1)} % (${headMeters.toFixed(1)} m)`;
+      playTone(300 + state.waterLevel * 4, 0.05, 'sine');
+    }
+
+    function onGateChange(val) {
+      if (state.interlockLocked) {
+        alert("⚠️ INTERLOCK ACTIVE: Sonar detected obstacle in front of spillway (<40cm). Gate motion prohibited!");
+        document.getElementById('sliderGate').value = state.gateAngle;
+        playAlarmSiren();
+        return;
+      }
+      state.gateAngle = parseInt(val);
+      const percent = Math.round((state.gateAngle / 90) * 100);
+      document.getElementById('sliderGateVal').textContent = `${state.gateAngle}° (${percent}%)`;
+      playTone(400 + state.gateAngle * 3, 0.05, 'triangle');
+    }
+
+    function onSonarChange(val) {
+      state.sonarDist = parseInt(val);
+      document.getElementById('sliderSonarVal').textContent = `${state.sonarDist} cm`;
+      document.getElementById('sonarDistVal').textContent = `${state.sonarDist} cm`;
+      const timeMs = (state.sonarDist * 2 / 34.3).toFixed(2);
+      document.getElementById('sonarPulseTime').textContent = `${timeMs} ms`;
+      playTone(800 - state.sonarDist, 0.04, 'square');
+    }
+
+    function onGasChange(val) {
+      state.gasPpm = parseInt(val);
+      let desc = "Clean Air";
+      if (state.gasPpm > 2800) desc = "HAZMAT Critical";
+      else if (state.gasPpm > 1200) desc = "Warning Threshold";
+      document.getElementById('sliderGasVal').textContent = `${state.gasPpm} PPM (${desc})`;
+      if (state.gasPpm > 2800) {
+        playAlarmSiren();
+      }
+    }
+
+    function toggleProbeManual(probeIndex) {
+      state.manualProbeOverride = true;
+      state.probes[probeIndex - 1] = !state.probes[probeIndex - 1];
+      playTone(550, 0.08, 'sine');
+    }
+
+    // ========================================================================
+    // 6 REAL-LIFE SCENARIO SWITCHERS (FOR VIVA / DEMO DEFENSE)
+    // ========================================================================
+    function loadScenario(type) {
+      // Clear active buttons
+      document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+
+      switch (type) {
+        case 'nominal':
+          document.getElementById('btnScenNominal').classList.add('active');
+          state.waterLevel = 50.0;
+          state.gateAngle = 20;
+          state.sonarDist = 160;
+          state.gasPpm = 420;
+          state.manualProbeOverride = false;
+          state.turbineActive = true;
+          break;
+
+        case 'flood':
+          document.getElementById('btnScenFlood').classList.add('active');
+          state.waterLevel = 98.0; // Overtopping danger
+          state.gateAngle = 85;   // Gate opens wide
+          state.sonarDist = 180;
+          state.gasPpm = 450;
+          state.manualProbeOverride = false;
+          playAlarmSiren();
+          break;
+
+        case 'sonar':
+          document.getElementById('btnScenSonar').classList.add('active');
+          state.waterLevel = 65.0;
+          state.sonarDist = 28;   // Interlock tripped (<40cm)
+          state.manualProbeOverride = false;
+          playAlarmSiren();
+          break;
+
+        case 'gas':
+          document.getElementById('btnScenGas').classList.add('active');
+          state.gasPpm = 3400;    // Toxic gas leak
+          playAlarmSiren();
+          break;
+
+        case 'grid':
+          document.getElementById('btnScenGrid').classList.add('active');
+          state.waterLevel = 75.0;
+          state.gateAngle = 40;
+          state.turbineActive = true;
+          state.sonarDist = 210;
+          state.gasPpm = 380;
+          playTone(660, 0.2, 'sine');
+          break;
+
+        case 'fault':
+          document.getElementById('btnScenFault').classList.add('active');
+          state.waterLevel = 80.0;
+          state.manualProbeOverride = true;
+          state.probes[0] = true;
+          state.probes[1] = false; // Corroded open-circuit probe 2
+          state.probes[2] = true;
+          state.probes[3] = false;
+          playAlarmSiren();
+          break;
+      }
+
+      // Sync sliders
+      document.getElementById('sliderLevel').value = state.waterLevel;
+      document.getElementById('sliderGate').value = state.gateAngle;
+      document.getElementById('sliderSonar').value = state.sonarDist;
+      document.getElementById('sliderGas').value = state.gasPpm;
+      
+      onWaterLevelChange(state.waterLevel);
+      onGateChange(state.gateAngle);
+      onSonarChange(state.sonarDist);
+      onGasChange(state.gasPpm);
+    }
+
+    // ========================================================================
+    // ACCORDION COLLAPSIBLE HANDLER
+    // ========================================================================
+    function toggleAccordion(headerElem) {
+      const item = headerElem.parentElement;
+      item.classList.toggle('open');
+      playTone(450, 0.04, 'sine');
+    }
+
+    // ========================================================================
+    // OPERATIONAL MODE: SIMULATION VS LIVE ESP32 HARDWARE BRIDGE
+    // ========================================================================
+    function setOperationalMode(mode) {
+      state.mode = mode;
+      const btnSim = document.getElementById('btnSimMode');
+      const btnHw = document.getElementById('btnHwMode');
+      const pulse = document.getElementById('systemPulse');
+      const label = document.getElementById('systemModeLabel');
+      const toast = document.getElementById('hwToast');
+
+      if (mode === 'sim') {
+        btnSim.className = 'btn-toggle active-sim';
+        btnHw.className = 'btn-toggle';
+        pulse.style.background = 'var(--cyan-400)';
+        pulse.style.boxShadow = '0 0 8px var(--cyan-400)';
+        label.textContent = 'PHYSICS ENGINE: ACTIVE (60 FPS)';
+        if (state.ws) {
+          state.ws.close();
+          state.ws = null;
+        }
+        toast.classList.remove('visible');
+      } else {
+        btnHw.className = 'btn-toggle active-hw';
+        btnSim.className = 'btn-toggle';
+        pulse.style.background = 'var(--emerald-400)';
+        pulse.style.boxShadow = '0 0 8px var(--emerald-400)';
+        label.textContent = 'ESP32 BRIDGE: CONNECTING (192.168.4.1)...';
+        connectEsp32WebSocket();
+      }
+    }
+
+    function connectEsp32WebSocket() {
+      const toast = document.getElementById('hwToast');
+      const title = document.getElementById('hwToastTitle');
+      const msg = document.getElementById('hwToastMsg');
+
+      try {
+        state.ws = new WebSocket('ws://192.168.4.1/ws');
+        
+        state.ws.onopen = () => {
+          title.textContent = 'ESP32 Live Bridge Connected';
+          msg.textContent = 'Telemetry stream active via ws://192.168.4.1/ws';
+          toast.classList.add('visible');
+          document.getElementById('systemModeLabel').textContent = 'ESP32 BRIDGE: CONNECTED (192.168.4.1)';
+        };
+
+        state.ws.onmessage = (event) => {
+          try {
+            const telemetry = JSON.parse(event.data);
+            if (telemetry.water_level !== undefined) {
+              state.waterLevel = telemetry.water_level;
+              document.getElementById('sliderLevel').value = state.waterLevel;
+              onWaterLevelChange(state.waterLevel);
+            }
+            if (telemetry.gate_pos !== undefined) {
+              state.gateAngle = Math.round((telemetry.gate_pos / 100) * 90);
+              document.getElementById('sliderGate').value = state.gateAngle;
+              onGateChange(state.gateAngle);
+            }
+            if (telemetry.distance_cm !== undefined) {
+              state.sonarDist = telemetry.distance_cm;
+              document.getElementById('sliderSonar').value = state.sonarDist;
+              onSonarChange(state.sonarDist);
+            }
+            if (telemetry.mq135_raw !== undefined) {
+              state.gasPpm = telemetry.mq135_raw;
+              document.getElementById('sliderGas').value = state.gasPpm;
+              onGasChange(state.gasPpm);
+            }
+          } catch (e) {
+            console.error('Parse telemetry error:', e);
+          }
+        };
+
+        state.ws.onerror = () => {
+          title.textContent = 'ESP32 Not Detected';
+          msg.textContent = 'Connect laptop to AquaGuard-Dam hotspot (192.168.4.1)';
+          toast.classList.add('visible');
+          document.getElementById('systemModeLabel').textContent = 'ESP32 BRIDGE: OFFLINE (SIM ACTIVE)';
+        };
+
+        state.ws.onclose = () => {
+          document.getElementById('systemModeLabel').textContent = 'ESP32 BRIDGE: DISCONNECTED';
+        };
+
+      } catch (err) {
+        title.textContent = 'Connection Attempt Failed';
+        msg.textContent = err.message;
+        toast.classList.add('visible');
+      }
+    }
+
+    function dismissHwToast() {
+      document.getElementById('hwToast').classList.remove('visible');
+    }
+
+    // Clock update
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('footerClock').textContent = now.toTimeString().split(' ')[0];
+    }, 1000);
+
+    // Initial state trigger
+    onWaterLevelChange(68);
+    onGateChange(45);
+    onSonarChange(125);
+    onGasChange(420);
+  </script>
+</body>
+</html>
