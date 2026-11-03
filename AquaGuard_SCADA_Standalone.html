@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>AquaGuard SCADA — Standalone Reservoir Control Console</title>
+  
+  <!-- 
+    ======================================================================
+    AquaGuard SCADA — Standalone Widescreen & Responsive Control Console
+    Engineered with Google Stitch MCP Design System
+    100% Self-Contained — Runs 100% offline from laptop or browser
+    Communicates directly with ESP32 via WebSockets (ws://192.168.4.1/ws)
+    and HTTP REST API (http://192.168.4.1/api/...)
+    ======================================================================
+  -->
+
+  <style>
+    /* ─── Stitch SCADA Design System Tokens ───────────────────────── */
+    :root {
+      --bg-lowest: #0a0e1a;
+      --bg-surface: #0f131f;
+      --bg-low: #171b28;
+      --bg-mid: #1b1f2c;
+      --bg-high: #262a37;
+      --bg-highest: #313442;
+      --border-subtle: rgba(148, 163, 184, 0.14);
+      --border-accent: rgba(0, 212, 255, 0.28);
+      --border-emerald: rgba(16, 185, 129, 0.35);
+      --border-amber: rgba(245, 158, 11, 0.4);
+      --border-red: rgba(239, 68, 68, 0.45);
+
+      --cyan: #00d4ff;
+      --cyan-light: #a8e8ff;
+      --cyan-glow: rgba(0, 212, 255, 0.35);
+      --emerald: #10b981;
+      --emerald-light: #4edea3;
+      --amber: #f59e0b;
+      --amber-light: #fcd34d;
+      --red: #ef4444;
+      --red-light: #ffb4ab;
+      --red-dark: #7f1d1d;
+
+      --text-main: #dfe2f3;
+      --text-muted: #bbc9cf;
+      --text-dim: #859398;
+
+      --font-display: "Space Grotesk", system-ui, -apple-system, sans-serif;
+      --font-body: "Inter", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    }
+
+    /* ─── Reset & Core Elements ───────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: var(--bg-lowest);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(0, 212, 255, 0.07) 0%, transparent 60%),
+        linear-gradient(rgba(148, 163, 184, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 28px 28px, 28px 28px;
+    }
+
+    /* ─── SCADA Tactical Cards ────────────────────────────────────── */
+    .scada-panel {
+      background: var(--bg-low);
+      background: linear-gradient(180deg, rgba(23, 27, 40, 0.88) 0%, rgba(15, 19, 31, 0.94) 100%);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 18px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    .scada-panel::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--border-accent), transparent);
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    .scada-subcard {
+      background: rgba(15, 19, 31, 0.7);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 10px 14px;
+    }
+
+    /* ─── Typography & Monospace ─────────────────────────────────── */
+    .font-mono { font-family: var(--font-mono); }
+    .font-display { font-family: var(--font-display); }
+    .metric-display {
+      font-family: var(--font-mono);
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+    .label-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+    }
+
+    /* ─── Status Badges & Pills ──────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .badge-safe {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--border-emerald);
+      color: var(--emerald-light);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+    }
+    .badge-warn {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid var(--border-amber);
+      color: var(--amber-light);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+    }
+    .badge-danger {
+      background: rgba(239, 68, 68, 0.18);
+      border: 1px solid var(--border-red);
+      color: var(--red-light);
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.35);
+      animation: alertPulse 1.8s infinite;
+    }
+    .badge-cyan {
+      background: rgba(0, 212, 255, 0.12);
+      border: 1px solid var(--border-accent);
+      color: var(--cyan);
+      box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+    }
+
+    /* ─── Buttons & Tactile Switches ─────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .btn:active {
+      transform: scale(0.97);
+    }
+    .btn-cyan {
+      background: var(--cyan);
+      color: var(--bg-lowest);
+      font-weight: 700;
+      box-shadow: 0 0 16px var(--cyan-glow);
+    }
+    .btn-cyan:hover {
+      background: #3cd7ff;
+      box-shadow: 0 0 22px rgba(0, 212, 255, 0.6);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: var(--border-subtle);
+      color: var(--text-main);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--border-accent);
+      color: var(--cyan);
+    }
+    .btn-emerald {
+      background: var(--emerald);
+      color: #002113;
+      font-weight: 700;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
+    }
+    .btn-emerald:hover {
+      background: #34d399;
+    }
+    .btn-red {
+      background: var(--red);
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.45);
+    }
+    .btn-red:hover {
+      background: #dc2626;
+    }
+
+    /* Slider styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      background: var(--bg-highest);
+      border-radius: 6px;
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--cyan);
+      cursor: pointer;
+      box-shadow: 0 0 12px var(--cyan);
+      border: 2px solid var(--bg-lowest);
+      transition: transform 0.1s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    /* Animations */
+    @keyframes alertPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    @keyframes radarSweep {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes waveGlide {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    @keyframes chevronPulse {
+      0%, 100% { opacity: 0.25; transform: translateY(0); }
+      50% { opacity: 1; transform: translateY(4px); }
+    }
+    @keyframes spinWheel {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .wave-anim { animation: waveGlide 4s linear infinite; }
+    .radar-sweep-arm {
+      animation: radarSweep 3.2s linear infinite;
+      transform-origin: 50% 50%;
+    }
+    .spin-active { animation: spinWheel 2s linear infinite; }
+    .chevron-pulse { animation: chevronPulse 1.6s ease-in-out infinite; }
+
+    /* Hazard stripes */
+    .hazard-stripes {
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(239, 68, 68, 0.22),
+        rgba(239, 68, 68, 0.22) 8px,
+        rgba(10, 14, 26, 0.9) 8px,
+        rgba(10, 14, 26, 0.9) 16px
+      );
+    }
+
+    /* Layout grid */
+    .scada-container {
+      max-width: 1560px;
+      margin: 0 auto;
+      padding: 80px 24px 32px 24px;
+    }
+    .scada-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    @media (min-width: 1024px) {
+      .scada-grid {
+        grid-template-columns: 3.8fr 4.4fr 3.8fr;
+      }
+    }
+    @media (min-width: 860px) {
+      #top-host-bar {
+        display: flex !important;
+      }
+    }
+
+    /* Modals & Overlays */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 14, 26, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-window {
+      background: var(--bg-low);
+      border: 1px solid var(--border-accent);
+      box-shadow: 0 0 40px rgba(0, 212, 255, 0.25);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 520px;
+      padding: 24px;
+      position: relative;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- TOP APP BAR / SCADA COMMAND BAR (Fixed Top Header)               -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <header style="position:fixed; top:0; left:0; right:0; height:64px; background:rgba(10,14,26,0.92); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border-bottom:1px solid var(--border-subtle); z-index:100; display:flex; align-items:center; justify-content:space-between; padding:0 24px; box-shadow:0 4px 25px rgba(0,0,0,0.6);">
+    <!-- Brand Title & Sector -->
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div style="width:38px; height:38px; border-radius:10px; background:rgba(0,212,255,0.12); border:1px solid var(--border-accent); display:flex; align-items:center; justify-content:center; box-shadow:0 0 12px var(--cyan-glow);">
+        <!-- Water Icon -->
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+        </svg>
+      </div>
+      <div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="font-display" style="font-size:18px; font-weight:700; color:#00d4ff; letter-spacing:-0.02em;">AquaGuard SCADA</span>
+          <span style="font-family:var(--font-mono); font-size:10px; padding:2px 6px; border-radius:4px; background:var(--bg-mid); border:1px solid var(--border-subtle); color:var(--text-muted);">SECTOR 04</span>
+        </div>
+        <p style="font-size:11px; color:var(--text-dim); letter-spacing:0.04em;">STANDALONE RESERVOIR &amp; SPILLWAY CONSOLE</p>
+      </div>
+    </div>
+
+    <!-- Center Host Diagnostics & Uptime (Desktop) -->
+    <div style="display:none; align-items:center; gap:16px;" id="top-host-bar">
+      <!-- Host IP Badge (Clickable to change IP) -->
+      <div onclick="ui.openIpModal()" style="cursor:pointer; display:flex; align-items:center; gap:8px; background:var(--bg-mid); padding:5px 12px; border-radius:8px; border:1px solid var(--border-subtle); transition:border 0.2s;" title="Click to change target ESP32 IP address">
+        <span class="label-tag" style="color:var(--text-dim);">NODE:</span>
+        <span class="font-mono" id="disp-host-ip" style="color:#00d4ff; font-weight:700;">192.168.4.1</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+      </div>
+
+      <!-- WebSocket Ping & State -->
+      <div style="display:flex; align-items:center; gap:8px; background:var(--bg-mid); padding:5px 12px; border-radius:8px; border:1px solid var(--border-subtle);">
+        <span class="label-tag" style="color:var(--text-dim);">WS:</span>
+        <span id="ws-latency-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981;"></span>
+        <span class="font-mono" id="ws-latency-text" style="color:#10b981; font-weight:600;">ACTIVE</span>
+      </div>
+
+      <!-- Uptime -->
+      <div style="display:flex; align-items:center; gap:8px; background:var(--bg-mid); padding:5px 12px; border-radius:8px; border:1px solid var(--border-subtle);">
+        <span class="label-tag" style="color:var(--text-dim);">UPTIME:</span>
+        <span class="font-mono" id="disp-uptime" style="color:var(--text-main); font-weight:600;">00:00:00</span>
+      </div>
+    </div>
+
+    <!-- Right Controls: Mode Toggle, Mute, Online Pill -->
+    <div style="display:flex; align-items:center; gap:12px;">
+      <!-- Mode Toggle (Auto / Manual) -->
+      <div style="display:flex; background:var(--bg-mid); padding:3px; border-radius:10px; border:1px solid var(--border-subtle);">
+        <button id="btn-mode-auto" onclick="api.setMode('auto')" style="border:none; padding:5px 12px; border-radius:7px; font-family:var(--font-mono); font-size:11px; font-weight:700; cursor:pointer; transition:all 0.15s; background:#00d4ff; color:#0a0e1a; box-shadow:0 0 12px rgba(0,212,255,0.4);">
+          AUTO
+        </button>
+        <button id="btn-mode-manual" onclick="api.setMode('manual')" style="border:none; padding:5px 12px; border-radius:7px; font-family:var(--font-mono); font-size:11px; font-weight:600; cursor:pointer; transition:all 0.15s; background:transparent; color:var(--text-dim);">
+          MANUAL
+        </button>
+      </div>
+
+      <!-- Audio Siren Mute Button -->
+      <button id="sound-toggle-btn" onclick="sound.toggle()" class="btn btn-secondary" style="padding:7px 10px;" title="Audio Sirens &amp; Feedback Toggle">
+        <svg id="sound-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+      </button>
+
+      <!-- Settings / Calibration Modal Button -->
+      <button onclick="ui.openSettingsModal()" class="btn btn-secondary" style="padding:7px 10px;" title="Depth &amp; Ultrasonic Sensor Calibration">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+
+      <!-- Overall Connection Status Pill -->
+      <div id="top-status-badge" class="badge badge-safe">
+        <span id="top-status-dot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#10b981;"></span>
+        <span id="top-status-text">ONLINE</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- MAIN SCADA WORKSPACE                                             -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <main class="scada-container">
+
+    <!-- Active Alarms Banner (Appears dynamically on hazard or alarm) -->
+    <div id="alarm-banner-container" style="margin-bottom:20px; display:none;">
+      <div id="alarm-banner" class="scada-panel" style="border-color:var(--border-red); background:rgba(239,68,68,0.12); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div style="width:40px; height:40px; border-radius:10px; background:rgba(239,68,68,0.3); border:1px solid var(--red); display:flex; align-items:center; justify-content:center; color:var(--red);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          </div>
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="font-display" id="alarm-title" style="font-size:18px; font-weight:700; color:var(--red);">CRITICAL SYSTEM ALERT</span>
+              <span id="alarm-status-code" class="badge badge-danger">INTERLOCKED</span>
+            </div>
+            <p id="alarm-message" style="font-size:13px; color:var(--text-main); margin-top:2px;">Gate lockout active: Proximity danger or toxic hazard threshold breached.</p>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button onclick="api.ack()" class="btn btn-emerald" style="padding:8px 16px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            ACKNOWLEDGE ALARM
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Telemetry Sub-Bar / Fast KPI Strip -->
+    <section style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:20px;">
+      <div class="scada-subcard">
+        <span class="label-tag">HYDROSTATIC HEAD</span>
+        <div style="display:flex; align-items:baseline; gap:4px; margin-top:2px;">
+          <span class="font-mono" id="kpi-head" style="font-size:20px; font-weight:700; color:#00d4ff;">0.0</span>
+          <span style="font-size:11px; color:var(--text-dim);">cm depth</span>
+        </div>
+      </div>
+      <div class="scada-subcard">
+        <span class="label-tag">TOTAL DISCHARGE</span>
+        <div style="display:flex; align-items:baseline; gap:4px; margin-top:2px;">
+          <span class="font-mono" id="kpi-discharge" style="font-size:20px; font-weight:700; color:#10b981;">0.0</span>
+          <span style="font-size:11px; color:var(--text-dim);">mL/s</span>
+        </div>
+      </div>
+      <div class="scada-subcard">
+        <span class="label-tag">SERVO GATE POSITION</span>
+        <div style="display:flex; align-items:baseline; gap:4px; margin-top:2px;">
+          <span class="font-mono" id="kpi-gate-pos" style="font-size:20px; font-weight:700; color:var(--text-main);">0.0°</span>
+          <span id="kpi-gate-label" style="font-size:11px; color:var(--text-dim);">CLOSED</span>
+        </div>
+      </div>
+      <div class="scada-subcard">
+        <span class="label-tag">TURBINE POWER GEN</span>
+        <div style="display:flex; align-items:baseline; gap:4px; margin-top:2px;">
+          <span class="font-mono" id="kpi-turbine-pwr" style="font-size:20px; font-weight:700; color:#00d4ff;">0.0</span>
+          <span style="font-size:11px; color:var(--text-dim);">mW</span>
+        </div>
+      </div>
+      <div class="scada-subcard">
+        <span class="label-tag">SONAR OBSTACLE CLEARANCE</span>
+        <div style="display:flex; align-items:baseline; gap:4px; margin-top:2px;">
+          <span class="font-mono" id="kpi-radar-dist" style="font-size:20px; font-weight:700; color:#10b981;">--</span>
+          <span style="font-size:11px; color:var(--text-dim);">cm gap</span>
+        </div>
+      </div>
+      <div class="scada-subcard">
+        <span class="label-tag">INTERLOCK WATCH</span>
+        <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+          <span id="kpi-interlock-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981;"></span>
+          <span class="font-mono" id="kpi-interlock-text" style="font-size:12px; font-weight:700; color:#10b981;">CLEAR (DISENGAGED)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 3-COLUMN TACTICAL BENTO GRID ────────────────────────────── -->
+    <div class="scada-grid">
+
+      <!-- ============================================================== -->
+      <!-- COLUMN 1: RESERVOIR HYDRAULIC & WATER LEVEL                     -->
+      <!-- ============================================================== -->
+      <section style="display:flex; flex-direction:column; gap:20px;">
+        
+        <!-- Reservoir Level Main Card -->
+        <div class="scada-panel">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+              <h2 class="font-display" style="font-size:17px; font-weight:700; color:var(--text-main);">RESERVOIR CAPACITY</h2>
+            </div>
+            <span id="level-nominal-badge" class="badge badge-safe">NOMINAL</span>
+          </div>
+
+          <!-- Capacity Readout -->
+          <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:1px solid var(--border-subtle); padding-bottom:12px; margin-bottom:16px;">
+            <div>
+              <span class="label-tag">STORAGE VOLUME</span>
+              <div style="display:flex; align-items:baseline; gap:6px; margin-top:2px;">
+                <span class="metric-display" id="disp-storage-ml" style="color:#00d4ff;">0</span>
+                <span style="font-family:var(--font-mono); font-size:12px; color:var(--text-dim);">ML</span>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <span class="label-tag">CAPACITY UTILIZATION</span>
+              <div class="metric-display" id="disp-level-pct" style="color:var(--text-main); margin-top:2px;">0%</div>
+            </div>
+          </div>
+
+          <!-- Water Tank Column & Discrete Wire Probes -->
+          <div style="display:flex; gap:16px; align-items:stretch;">
+            
+            <!-- Graphic Water Column Tank -->
+            <div style="position:relative; width:110px; height:260px; background:rgba(10,14,26,0.9); border:1px solid var(--border-subtle); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-end; padding:2px; box-shadow:inset 0 0 16px rgba(0,0,0,0.8);">
+              <!-- 95% Critical Line -->
+              <div style="position:absolute; top:5%; left:0; right:0; border-top:1px dashed var(--red); z-index:20; display:flex; justify-content:space-between; padding:0 4px; pointer-events:none;">
+                <span style="font-family:var(--font-mono); font-size:8px; color:var(--red); font-weight:700; background:rgba(10,14,26,0.8); border-radius:2px; padding:0 2px;">95% CRIT</span>
+              </div>
+              <!-- 75% High Line -->
+              <div style="position:absolute; top:25%; left:0; right:0; border-top:1px dashed var(--amber); z-index:20; display:flex; justify-content:space-between; padding:0 4px; pointer-events:none;">
+                <span style="font-family:var(--font-mono); font-size:8px; color:var(--amber); font-weight:700; background:rgba(10,14,26,0.8); border-radius:2px; padding:0 2px;">75% HIGH</span>
+              </div>
+              <!-- 50% Medium Target -->
+              <div style="position:absolute; top:50%; left:0; right:0; border-top:1px dashed #00d4ff; opacity:0.6; z-index:20; display:flex; justify-content:space-between; padding:0 4px; pointer-events:none;">
+                <span style="font-family:var(--font-mono); font-size:8px; color:#00d4ff; background:rgba(10,14,26,0.8); border-radius:2px; padding:0 2px;">50% MED</span>
+              </div>
+              <!-- 25% Low Line -->
+              <div style="position:absolute; top:75%; left:0; right:0; border-top:1px dashed var(--text-dim); opacity:0.6; z-index:20; display:flex; justify-content:space-between; padding:0 4px; pointer-events:none;">
+                <span style="font-family:var(--font-mono); font-size:8px; color:var(--text-dim); background:rgba(10,14,26,0.8); border-radius:2px; padding:0 2px;">25% LOW</span>
+              </div>
+
+              <!-- Animated Liquid Fill Body -->
+              <div id="tank-water-body" style="position:relative; width:100%; height:10%; border-radius:0 0 8px 8px; background:linear-gradient(to top, #003642 0%, #00586b 60%, #00d4ff 100%); transition:height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);">
+                <!-- Animated SVG Wave Top -->
+                <div style="position:absolute; top:-10px; left:0; width:200%; height:14px;" class="wave-anim">
+                  <svg width="100%" height="100%" viewBox="0 0 400 20" preserveAspectRatio="none">
+                    <path d="M0,10 C50,20 100,0 150,10 C200,20 250,0 300,10 C350,20 400,0 450,10 L450,20 L0,20 Z" fill="#00d4ff" fill-opacity="0.6"></path>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Center Level Percent Overlay -->
+              <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; z-index:30;">
+                <span class="font-mono" id="tank-level-overlay-text" style="font-size:22px; font-weight:800; color:#ffffff; text-shadow:0 2px 8px rgba(0,0,0,0.9);">0%</span>
+              </div>
+            </div>
+
+            <!-- Discrete Conductivity Probes List -->
+            <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; gap:8px;">
+              <div>
+                <span class="label-tag" style="display:block; margin-bottom:8px;">CONDUCTIVITY PROBE ARRAY</span>
+                
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                  <!-- Probe L4: Warning / Breach -->
+                  <div class="scada-subcard" style="padding:6px 10px; display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span id="dot-probe-warn" style="width:8px; height:8px; border-radius:50%; background:var(--bg-highest); border:1px solid var(--text-dim);"></span>
+                      <span class="font-mono" style="font-size:11px; font-weight:600;">L4: BREACH WARN</span>
+                    </div>
+                    <span id="txt-probe-warn" class="font-mono" style="font-size:10px; color:var(--text-dim);">DRY</span>
+                  </div>
+
+                  <!-- Probe L3: High -->
+                  <div class="scada-subcard" style="padding:6px 10px; display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span id="dot-probe-high" style="width:8px; height:8px; border-radius:50%; background:var(--bg-highest); border:1px solid var(--text-dim);"></span>
+                      <span class="font-mono" style="font-size:11px; font-weight:600;">L3: HIGH CREST</span>
+                    </div>
+                    <span id="txt-probe-high" class="font-mono" style="font-size:10px; color:var(--text-dim);">DRY</span>
+                  </div>
+
+                  <!-- Probe L2: Medium -->
+                  <div class="scada-subcard" style="padding:6px 10px; display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span id="dot-probe-med" style="width:8px; height:8px; border-radius:50%; background:var(--bg-highest); border:1px solid var(--text-dim);"></span>
+                      <span class="font-mono" style="font-size:11px; font-weight:600;">L2: MED OPER</span>
+                    </div>
+                    <span id="txt-probe-med" class="font-mono" style="font-size:10px; color:var(--text-dim);">DRY</span>
+                  </div>
+
+                  <!-- Probe L1: Low Base -->
+                  <div class="scada-subcard" style="padding:6px 10px; display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span id="dot-probe-low" style="width:8px; height:8px; border-radius:50%; background:var(--bg-highest); border:1px solid var(--text-dim);"></span>
+                      <span class="font-mono" style="font-size:11px; font-weight:600;">L1: BASE SILL</span>
+                    </div>
+                    <span id="txt-probe-low" class="font-mono" style="font-size:10px; color:var(--text-dim);">DRY</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Ultrasonic Water Distance Tile -->
+              <div class="scada-subcard" style="padding:8px 12px; background:rgba(0,212,255,0.05); border-color:var(--border-accent);">
+                <span class="label-tag" style="color:#00d4ff;">HC-SR04 SONIC LEVEL</span>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; margin-top:2px;">
+                  <span class="font-mono" id="disp-sonic-dist" style="font-size:13px; font-weight:700; color:var(--text-main);">-- cm gap</span>
+                  <span class="font-mono" id="disp-sonic-depth" style="font-size:12px; color:#00d4ff;">-- cm depth</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Tailrace Flow Sensor Card -->
+        <div class="scada-panel">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+              <h3 class="font-display" style="font-size:15px; font-weight:700; color:var(--text-main);">TAILRACE FLOW CONFIRMATION</h3>
+            </div>
+            <span id="tailrace-flow-badge" class="badge badge-safe">DRY</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="scada-subcard">
+              <span class="label-tag">FLOW STATUS</span>
+              <div class="font-mono" id="disp-flow-state" style="font-size:14px; font-weight:700; color:#10b981; margin-top:2px;">CLOSED</div>
+            </div>
+            <div class="scada-subcard">
+              <span class="label-tag">CONFIRM TIME</span>
+              <div class="font-mono" id="disp-flow-ms" style="font-size:14px; font-weight:700; color:var(--text-main); margin-top:2px;">0 ms</div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- COLUMN 2: RADIAL SPILLWAY GATE & TURBINE DEMO                   -->
+      <!-- ============================================================== -->
+      <section style="display:flex; flex-direction:column; gap:20px;">
+
+        <!-- Cutaway Radial Spillway Gate Schematic Card -->
+        <div class="scada-panel">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              <h2 class="font-display" style="font-size:17px; font-weight:700; color:var(--text-main);">RADIAL SPILLWAY GATE</h2>
+            </div>
+            <span id="gate-angle-pill" class="badge badge-cyan">0° CLOSED</span>
+          </div>
+
+          <!-- Dynamic Cutaway SVG Gate Schematic -->
+          <div style="position:relative; width:100%; height:200px; background:rgba(10,14,26,0.92); border:1px solid var(--border-subtle); border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+            <svg id="svg-gate-canvas" viewBox="0 0 440 180" style="width:100%; height:100%;">
+              <defs>
+                <linearGradient id="gateWaterGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.85"></stop>
+                  <stop offset="100%" stop-color="#003642" stop-opacity="0.95"></stop>
+                </linearGradient>
+                <linearGradient id="gateDischargeGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.9"></stop>
+                  <stop offset="60%" stop-color="#00586b" stop-opacity="0.7"></stop>
+                  <stop offset="100%" stop-color="#171b28" stop-opacity="0.1"></stop>
+                </linearGradient>
+              </defs>
+
+              <!-- Dam Concrete Crest Profile (Left) -->
+              <path d="M 0,130 L 110,130 Q 150,130 180,175 L 0,175 Z" fill="#1b1f2c" stroke="#3c494e" stroke-width="2"></path>
+              <text x="25" y="155" fill="#859398" font-family="JetBrains Mono" font-size="9" font-weight="600">OGEE CREST</text>
+
+              <!-- Spillway Chute Foundation -->
+              <path d="M 180,175 L 440,175 L 440,180 L 0,180 Z" fill="#171b28"></path>
+
+              <!-- Headwater Pool (Behind Crest) -->
+              <path id="svg-headwater-pool" d="M 0,60 L 110,60 L 110,130 L 0,130 Z" fill="url(#gateWaterGrad)"></path>
+
+              <!-- Radial Gate Arm Pivot Pin (Trunnion) -->
+              <g id="svg-gate-assembly">
+                <!-- Pivot Pin -->
+                <circle cx="280" cy="85" r="9" fill="#0f131f" stroke="#00d4ff" stroke-width="2.5"></circle>
+                <circle cx="280" cy="85" r="3" fill="#3cd7ff"></circle>
+                <text x="270" y="70" fill="#859398" font-family="JetBrains Mono" font-size="8">TRUNNION</text>
+
+                <!-- Rotating Arm & Curved Leaf (Rotated around 280, 85) -->
+                <g id="svg-gate-arm" transform="rotate(0 280 85)">
+                  <!-- Steel Strut Arm -->
+                  <line x1="280" y1="85" x2="145" y2="105" stroke="#3cd7ff" stroke-width="4" stroke-linecap="round"></line>
+                  <line x1="280" y1="85" x2="155" y2="135" stroke="#00586b" stroke-width="2.5"></line>
+                  <!-- Curved Tainter Face Leaf -->
+                  <path d="M 140,80 A 140,140 0 0,1 155,140" fill="none" stroke="#00d4ff" stroke-width="7" stroke-linecap="round"></path>
+                </g>
+              </g>
+
+              <!-- Dynamic Discharge Outflow Stream (under the gate) -->
+              <path id="svg-gate-stream" d="M 155,140 Q 220,145 320,170 T 440,175 L 440,180 L 155,180 Z" fill="url(#gateDischargeGrad)" opacity="0"></path>
+
+              <!-- Animated Flow Chevrons -->
+              <g id="svg-gate-chevrons" class="chevron-pulse" stroke="#a8e8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0">
+                <path d="M 210,152 L 220,156 L 210,160"></path>
+                <path d="M 270,158 L 280,162 L 270,166"></path>
+                <path d="M 330,164 L 340,168 L 330,172"></path>
+              </g>
+
+              <!-- Angle Display Overlay -->
+              <text id="svg-angle-text" x="320" y="55" fill="#00d4ff" font-family="JetBrains Mono" font-size="14" font-weight="700">θ = 0.0°</text>
+              <text id="svg-discharge-text" x="320" y="75" fill="var(--text-dim)" font-family="JetBrains Mono" font-size="10">0.0 mL/s</text>
+            </svg>
+          </div>
+
+          <!-- Gate Control Hub (Tactile Actuator & Presets) -->
+          <div style="margin-top:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span class="label-tag">SG90 SERVO SLIDER (0° – 100°)</span>
+              <span class="font-mono" id="slider-target-disp" style="font-size:14px; font-weight:700; color:#00d4ff;">0° [CLOSED]</span>
+            </div>
+
+            <!-- Gate Slider -->
+            <input type="range" id="gate-range-input" min="0" max="100" value="0" oninput="ui.onGateInput(this.value)" onchange="ui.onGateChange(this.value)"/>
+
+            <!-- Presets (0°, 25°, 50°, 100°) -->
+            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-top:12px;">
+              <button onclick="api.setGate(0)" class="btn btn-secondary" style="padding:6px 4px; font-size:11px;">0° SEAL</button>
+              <button onclick="api.setGate(25)" class="btn btn-secondary" style="padding:6px 4px; font-size:11px;">25° BASE</button>
+              <button onclick="api.setGate(50)" class="btn btn-secondary" style="padding:6px 4px; font-size:11px; border-color:var(--border-accent); color:#00d4ff; font-weight:700;">50° FLOOD</button>
+              <button onclick="api.setGate(100)" class="btn btn-red" style="padding:6px 4px; font-size:11px;">100° MAX</button>
+            </div>
+          </div>
+
+          <!-- Emergency Interlock Override Actuator -->
+          <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border-subtle);">
+            <div class="hazard-stripes" style="padding:3px; border-radius:10px; border:1px solid var(--border-red);">
+              <button id="btn-override-actuator" onmousedown="ui.startOverrideHold()" onmouseup="ui.cancelOverrideHold()" onmouseleave="ui.cancelOverrideHold()" ontouchstart="ui.startOverrideHold()" ontouchend="ui.cancelOverrideHold()" class="btn btn-red" style="width:100%; padding:10px; font-size:12px; letter-spacing:0.04em;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+                <span id="btn-override-label">HOLD 3s TO OVERRIDE INTERLOCK</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hydroelectric Turbine Demo Generator Card -->
+        <div class="scada-panel">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <svg id="turbine-header-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>
+              <h3 class="font-display" style="font-size:16px; font-weight:700; color:var(--text-main);">HYDROELECTRIC TURBINE</h3>
+            </div>
+            <span id="turbine-status-badge" class="badge badge-safe">STANDBY</span>
+          </div>
+
+          <!-- Telemetry 4-Pack Grid -->
+          <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:14px;">
+            <div class="scada-subcard" style="text-align:center; padding:8px 4px;">
+              <span class="label-tag" style="font-size:9px;">SPEED</span>
+              <div class="font-mono" id="disp-turb-rpm" style="font-size:16px; font-weight:700; color:var(--text-main); margin-top:2px;">0</div>
+              <span style="font-size:9px; color:var(--text-dim);">RPM</span>
+            </div>
+            <div class="scada-subcard" style="text-align:center; padding:8px 4px;">
+              <span class="label-tag" style="font-size:9px;">VOLTAGE</span>
+              <div class="font-mono" id="disp-turb-volt" style="font-size:16px; font-weight:700; color:#00d4ff; margin-top:2px;">0.00</div>
+              <span style="font-size:9px; color:var(--text-dim);">VOLTS</span>
+            </div>
+            <div class="scada-subcard" style="text-align:center; padding:8px 4px;">
+              <span class="label-tag" style="font-size:9px;">CURRENT</span>
+              <div class="font-mono" id="disp-turb-curr" style="font-size:16px; font-weight:700; color:#10b981; margin-top:2px;">0.0</div>
+              <span style="font-size:9px; color:var(--text-dim);">mA</span>
+            </div>
+            <div class="scada-subcard" style="text-align:center; padding:8px 4px;">
+              <span class="label-tag" style="font-size:9px;">POWER</span>
+              <div class="font-mono" id="disp-turb-power" style="font-size:16px; font-weight:700; color:#fcd34d; margin-top:2px;">0.0</div>
+              <span style="font-size:9px; color:var(--text-dim);">mW</span>
+            </div>
+          </div>
+
+          <!-- Turbine Actuator Slider & Toggle -->
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <button id="btn-turbine-toggle" onclick="ui.toggleTurbine()" class="btn btn-secondary" style="flex:1;">
+              START GENERATOR DEMO
+            </button>
+            <div style="flex:1;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span class="label-tag" style="font-size:9px;">PWM GOVERNOR</span>
+                <span class="font-mono" id="disp-turb-slider-pct" style="font-size:10px; color:#00d4ff;">85%</span>
+              </div>
+              <input type="range" id="turbine-speed-slider" min="10" max="100" value="85" onchange="ui.onTurbineSpeedChange(this.value)"/>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- COLUMN 3: DUAL PUMPS, HAZARDS & SCADA TERMINAL                 -->
+      <!-- ============================================================== -->
+      <section style="display:flex; flex-direction:column; gap:20px;">
+
+        <!-- Dual Pump Actuator Bay -->
+        <div class="scada-panel">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              <h2 class="font-display" style="font-size:17px; font-weight:700; color:var(--text-main);">DUAL PUMP ACTUATOR BAY</h2>
+            </div>
+            <span class="badge badge-cyan">MJE3055T H-BRIDGE</span>
+          </div>
+
+          <!-- Pump 1 (Inlet) -->
+          <div class="scada-subcard" style="margin-bottom:10px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+              <div>
+                <span class="font-display" style="font-size:14px; font-weight:700; color:var(--text-main);">PUMP 1 — INLET FILL</span>
+                <span id="p1-runtime-text" style="display:block; font-size:10px; color:var(--text-dim); font-family:var(--font-mono);">STANDBY • 00:00</span>
+              </div>
+              <button id="btn-p1-toggle" onclick="ui.togglePump(1)" class="btn btn-secondary" style="padding:4px 12px; font-size:11px;">
+                OFF
+              </button>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span class="label-tag" style="font-size:9px;">SPEED:</span>
+              <input type="range" id="p1-speed-slider" min="20" max="100" value="100" onchange="ui.onPumpSpeedChange(1, this.value)" style="flex:1;"/>
+              <span class="font-mono" id="disp-p1-speed" style="font-size:11px; color:#00d4ff; width:35px; text-align:right;">100%</span>
+            </div>
+          </div>
+
+          <!-- Pump 2 (Outlet) -->
+          <div class="scada-subcard">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+              <div>
+                <span class="font-display" style="font-size:14px; font-weight:700; color:var(--text-main);">PUMP 2 — OUTLET DRAIN</span>
+                <span id="p2-runtime-text" style="display:block; font-size:10px; color:var(--text-dim); font-family:var(--font-mono);">STANDBY • 00:00</span>
+              </div>
+              <button id="btn-p2-toggle" onclick="ui.togglePump(2)" class="btn btn-secondary" style="padding:4px 12px; font-size:11px;">
+                OFF
+              </button>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span class="label-tag" style="font-size:9px;">SPEED:</span>
+              <input type="range" id="p2-speed-slider" min="20" max="100" value="100" onchange="ui.onPumpSpeedChange(2, this.value)" style="flex:1;"/>
+              <span class="font-mono" id="disp-p2-speed" style="font-size:11px; color:#00d4ff; width:35px; text-align:right;">100%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sonar Radar & Gas Hazard Scope -->
+        <div class="scada-panel">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+              <h3 class="font-display" style="font-size:16px; font-weight:700; color:var(--text-main);">PROXIMITY RADAR &amp; HAZARD</h3>
+            </div>
+            <span id="badge-radar-zone" class="badge badge-safe">CLEAR</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:130px 1fr; gap:16px; align-items:center;">
+            
+            <!-- Circular PPI Radar Display -->
+            <div style="position:relative; width:120px; height:120px; border-radius:50%; background:#070b14; border:2px solid rgba(16,185,129,0.4); display:flex; align-items:center; justify-content:center; overflow:hidden; box-shadow:0 0 18px rgba(16,185,129,0.2);">
+              <!-- Range rings -->
+              <div style="position:absolute; inset:12px; border-radius:50%; border:1px solid rgba(16,185,129,0.2);"></div>
+              <div style="position:absolute; inset:28px; border-radius:50%; border:1px solid rgba(16,185,129,0.25);"></div>
+              <div style="position:absolute; inset:44px; border-radius:50%; border:1px dashed rgba(239,68,68,0.4);"></div>
+              <!-- Crosshairs -->
+              <div style="position:absolute; width:100%; height:1px; background:rgba(16,185,129,0.3);"></div>
+              <div style="position:absolute; height:100%; width:1px; background:rgba(16,185,129,0.3);"></div>
+              <!-- Rotating Sweep Arm -->
+              <div class="radar-sweep-arm" style="position:absolute; inset:0;">
+                <div style="width:50%; height:50%; background:linear-gradient(135deg, rgba(16,185,129,0.45) 0%, transparent 80%); transform-origin:bottom right;"></div>
+              </div>
+              <!-- Detected Obstacle Blip -->
+              <div id="radar-blip" style="position:absolute; top:28px; right:34px; width:7px; height:7px; border-radius:50%; background:#10b981; box-shadow:0 0 10px #10b981; transition:all 0.3s;"></div>
+              <!-- Distance text -->
+              <span id="radar-dist-overlay" class="font-mono" style="position:absolute; bottom:6px; font-size:9px; font-weight:700; color:#10b981;">-- cm</span>
+            </div>
+
+            <!-- Gas & Flame Telemetry -->
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <!-- MQ-135 Gas -->
+              <div class="scada-subcard" style="padding:6px 10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span class="label-tag" style="font-size:9px;">MQ-135 GAS CONCENTRATION</span>
+                  <span id="badge-gas-level" class="badge badge-safe" style="padding:1px 6px; font-size:9px;">NORMAL</span>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; margin-top:2px;">
+                  <span class="font-mono" id="disp-gas-raw" style="font-size:16px; font-weight:700; color:#00d4ff;">0 ADC</span>
+                  <span class="font-mono" id="disp-gas-warmup" style="font-size:10px; color:var(--text-dim);">WARM-UP: OK</span>
+                </div>
+              </div>
+
+              <!-- Flame Sensor -->
+              <div class="scada-subcard" style="padding:6px 10px; display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                  <span class="label-tag" style="font-size:9px;">IR FLAME SENSOR</span>
+                  <div class="font-mono" id="disp-flame-state" style="font-size:11px; font-weight:700; color:#10b981;">NOMINAL (NO FIRE)</div>
+                </div>
+                <div id="flame-indicator-dot" style="width:12px; height:12px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981;"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Live SCADA FIFO Terminal Event Stream -->
+        <div class="scada-panel" style="flex:1; display:flex; flex-direction:column; min-height:220px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border-subtle); padding-bottom:8px; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+              <h3 class="font-display" style="font-size:14px; font-weight:700; color:var(--text-main);">SYSTEM EVENT STREAM</h3>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button onclick="logger.clear()" style="background:transparent; border:1px solid var(--border-subtle); color:var(--text-dim); border-radius:4px; padding:2px 8px; font-family:var(--font-mono); font-size:10px; cursor:pointer;">CLEAR</button>
+              <button onclick="logger.exportJSON()" style="background:transparent; border:1px solid var(--border-accent); color:#00d4ff; border-radius:4px; padding:2px 8px; font-family:var(--font-mono); font-size:10px; cursor:pointer;">JSON</button>
+            </div>
+          </div>
+
+          <!-- Log Content (Terminal Box) -->
+          <div id="terminal-box" style="flex:1; max-height:160px; overflow-y:auto; font-family:var(--font-mono); font-size:11px; display:flex; flex-direction:column; gap:4px; padding-right:4px;">
+            <div style="color:var(--text-dim);">[00:00:00] <span style="color:#00d4ff;">[SYS]</span> AquaGuard SCADA client initialized.</div>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL: IP CONFIGURATION (Change Target ESP32 Host)                -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <div id="modal-ip-config" class="modal-backdrop">
+    <div class="modal-window">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 class="font-display" style="font-size:18px; font-weight:700; color:#00d4ff;">ESP32 Connection Settings</h3>
+        <button onclick="ui.closeIpModal()" style="background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:20px;">✕</button>
+      </div>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
+        Configure the target IP or hostname for your AquaGuard ESP32. By default, the ESP32 Access Point broadcasts at <strong>192.168.4.1</strong>.
+      </p>
+
+      <div style="margin-bottom:16px;">
+        <label class="label-tag" style="display:block; margin-bottom:6px;">ESP32 IP or Hostname</label>
+        <input type="text" id="input-target-ip" value="192.168.4.1" class="font-mono" style="width:100%; padding:10px 14px; background:var(--bg-lowest); border:1px solid var(--border-accent); border-radius:8px; color:#ffffff; font-size:14px; outline:none;"/>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-bottom:20px;">
+        <button onclick="document.getElementById('input-target-ip').value='192.168.4.1'" class="btn btn-secondary" style="flex:1; font-size:11px;">192.168.4.1 (Default AP)</button>
+        <button onclick="document.getElementById('input-target-ip').value='dam.local'" class="btn btn-secondary" style="flex:1; font-size:11px;">dam.local (mDNS)</button>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button onclick="ui.closeIpModal()" class="btn btn-secondary">Cancel</button>
+        <button onclick="ui.saveIpAddress()" class="btn btn-cyan">Save &amp; Reconnect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL: SENSOR CALIBRATION (Ultrasonic Full/Empty Distances)       -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <div id="modal-settings" class="modal-backdrop">
+    <div class="modal-window">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 class="font-display" style="font-size:18px; font-weight:700; color:#00d4ff;">Reservoir Depth Calibration</h3>
+        <button onclick="ui.closeSettingsModal()" style="background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:20px;">✕</button>
+      </div>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
+        Calibrate the top-mounted HC-SR04 ultrasonic distance thresholds to accurately compute basin depth and percentage.
+      </p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px;">
+        <div>
+          <label class="label-tag" style="display:block; margin-bottom:6px;">EMPTY DISTANCE (CM)</label>
+          <input type="number" id="input-cal-empty" step="0.5" value="42.0" class="font-mono" style="width:100%; padding:10px; background:var(--bg-lowest); border:1px solid var(--border-subtle); border-radius:8px; color:#ffffff; font-size:14px; outline:none;"/>
+          <span style="font-size:11px; color:var(--text-dim); display:block; margin-top:4px;">Distance to basin bottom (~42 cm)</span>
+        </div>
+        <div>
+          <label class="label-tag" style="display:block; margin-bottom:6px;">FULL DISTANCE (CM)</label>
+          <input type="number" id="input-cal-full" step="0.5" value="5.0" class="font-mono" style="width:100%; padding:10px; background:var(--bg-lowest); border:1px solid var(--border-subtle); border-radius:8px; color:#ffffff; font-size:14px; outline:none;"/>
+          <span style="font-size:11px; color:var(--text-dim); display:block; margin-top:4px;">Sensor to max flood line (~5 cm)</span>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button onclick="ui.closeSettingsModal()" class="btn btn-secondary">Cancel</button>
+        <button onclick="ui.saveCalibration()" class="btn btn-cyan">Upload Calibration</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- JAVASCRIPT: SCADA ENGINE, WEBSOCKETS, REST & SYNTHESIZER         -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <script>
+    'use strict';
+
+    /* ─── 1. Storage & Host Management ────────────────────────────── */
+    const config = {
+      defaultIp: '192.168.4.1',
+      getTargetHost() {
+        const stored = localStorage.getItem('aquaguard_target_ip');
+        if (stored && stored.trim() !== '') return stored.trim();
+        // If loaded via http/https (e.g. from local server), use current host
+        if (window.location.protocol.startsWith('http') && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+          return window.location.host;
+        }
+        return this.defaultIp;
+      },
+      setTargetHost(ip) {
+        if (!ip) return;
+        localStorage.setItem('aquaguard_target_ip', ip.trim());
+      }
+    };
+
+    /* ─── 2. Web Audio Synthesizer (Zero Dependencies) ───────────── */
+    const sound = {
+      ctx: null,
+      enabled: true,
+      lastAlarmTime: 0,
+
+      init() {
+        const saved = localStorage.getItem('aquaguard_sound');
+        if (saved !== null) this.enabled = (saved === 'true');
+        this.updateIcon();
+        const unlock = () => {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+          }
+        };
+        ['pointerdown', 'click', 'keydown'].forEach(evt => window.addEventListener(evt, unlock, { once: true }));
+      },
+
+      toggle() {
+        this.enabled = !this.enabled;
+        localStorage.setItem('aquaguard_sound', this.enabled ? 'true' : 'false');
+        this.updateIcon();
+        if (this.enabled) this.playTone(880, 80, 'sine', 0.2);
+      },
+
+      updateIcon() {
+        const icon = document.getElementById('sound-icon-svg');
+        const btn = document.getElementById('sound-toggle-btn');
+        if (!icon) return;
+        if (this.enabled) {
+          icon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>';
+          icon.setAttribute('stroke', '#00d4ff');
+          if (btn) btn.title = 'Sound: ON';
+        } else {
+          icon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>';
+          icon.setAttribute('stroke', '#859398');
+          if (btn) btn.title = 'Sound: MUTED';
+        }
+      },
+
+      playTone(freq, durMs, type = 'sine', volume = 0.25) {
+        if (!this.enabled) return;
+        try {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          }
+          if (!this.ctx) return;
+          if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + (durMs / 1000));
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + (durMs / 1000));
+        } catch (e) {}
+      },
+
+      playCriticalAlarm() {
+        const now = Date.now();
+        if (now - this.lastAlarmTime < 2500) return;
+        this.lastAlarmTime = now;
+        this.playTone(920, 200, 'sawtooth', 0.35);
+        setTimeout(() => this.playTone(680, 250, 'sawtooth', 0.35), 220);
+      },
+
+      playAcknowledge() {
+        this.playTone(600, 100, 'sine', 0.25);
+        setTimeout(() => this.playTone(1200, 150, 'sine', 0.25), 110);
+      }
+    };
+
+    /* ─── 3. Telemetry Terminal Logger ────────────────────────────── */
+    const logger = {
+      box: null,
+      entries: [],
+
+      init() {
+        this.box = document.getElementById('terminal-box');
+      },
+
+      log(tag, msg) {
+        const now = new Date();
+        const timeStr = `[${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}]`;
+        this.entries.push({ time: timeStr, tag, msg });
+        if (this.entries.length > 200) this.entries.shift();
+
+        if (!this.box) return;
+        let color = '#a8e8ff';
+        if (tag === 'WARN') color = '#f59e0b';
+        if (tag === 'CRIT' || tag === 'ALARM') color = '#ef4444';
+        if (tag === 'SYS') color = '#10b981';
+        if (tag === 'CMD') color = '#00d4ff';
+
+        const row = document.createElement('div');
+        row.innerHTML = `<span style="color:var(--text-dim);">${timeStr}</span> <span style="color:${color}; font-weight:700;">[${tag}]</span> <span>${msg}</span>`;
+        this.box.appendChild(row);
+        this.box.scrollTop = this.box.scrollHeight;
+      },
+
+      clear() {
+        this.entries = [];
+        if (this.box) this.box.innerHTML = '';
+        this.log('SYS', 'Telemetry FIFO log buffer cleared.');
+      },
+
+      exportJSON() {
+        const blob = new Blob([JSON.stringify(this.entries, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `aquaguard_scada_log_${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    };
+
+    /* ─── 4. REST & WebSocket Dispatcher ─────────────────────────── */
+    const api = {
+      send(endpoint, body) {
+        const host = config.getTargetHost();
+        const cleanEndpoint = endpoint.split('?')[0];
+        const cmd = cleanEndpoint.replace('/api/', '');
+        const payload = { cmd, ...body };
+
+        // 1. WebSocket Low Latency Dispatch
+        if (scada.ws && scada.ws.readyState === WebSocket.OPEN) {
+          try {
+            scada.ws.send(JSON.stringify(payload));
+          } catch (e) {
+            console.warn('[AquaGuard] WS send error:', e);
+          }
+        }
+
+        // 2. HTTP POST fallback to ESP32
+        const url = `http://${host}${endpoint}`;
+        return fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        .then(r => r.json().catch(() => ({ ok: true })))
+        .then(data => {
+          setTimeout(() => scada.fetchState(), 120);
+          return data;
+        })
+        .catch(err => {
+          console.warn(`[AquaGuard API] Fallback fetch on ${url}:`, err);
+          return { ok: false };
+        });
+      },
+
+      setGate(angle) {
+        const a = parseInt(angle, 10);
+        logger.log('CMD', `Commanded Gate Sluice: ${a}°`);
+        sound.playTone(440, 60, 'sine', 0.2);
+        return this.send(`/api/gate?angle=${a}`, { angle: a });
+      },
+
+      setPump(id, on, speed) {
+        const s = parseInt(speed, 10);
+        logger.log('CMD', `Pump ${id} commanded: ${on ? 'ON (' + s + '%)' : 'OFF'}`);
+        sound.playTone(330, 70, 'triangle', 0.2);
+        return this.send(`/api/pump?id=${id}&on=${on}&speed=${s}`, { id, on: !!on, speed: s });
+      },
+
+      setTurbine(on, speed) {
+        const s = parseInt(speed, 10);
+        logger.log('CMD', `Turbine generator commanded: ${on ? 'ON (' + s + '%)' : 'OFF'}`);
+        sound.playTone(550, 70, 'sine', 0.2);
+        return this.send(`/api/turbine?on=${on}&speed=${s}`, { on: !!on, speed: s });
+      },
+
+      setMode(mode) {
+        logger.log('SYS', `Operating mode commanded: ${mode.toUpperCase()}`);
+        sound.playTone(mode === 'auto' ? 880 : 440, 100, 'sine', 0.25);
+        return this.send(`/api/mode?mode=${mode}`, { mode });
+      },
+
+      override() {
+        logger.log('WARN', 'Emergency Gate Proximity Override triggered!');
+        sound.playTone(880, 300, 'sawtooth', 0.4);
+        return this.send('/api/override', { confirm: true });
+      },
+
+      ack() {
+        logger.log('SYS', 'Master alarms acknowledged by operator.');
+        sound.playAcknowledge();
+        return this.send('/api/ack', { ack: true });
+      },
+
+      saveSettings(emptyCm, fullCm) {
+        logger.log('SYS', `Calibrated depth: Empty=${emptyCm}cm, Full=${fullCm}cm`);
+        sound.playAcknowledge();
+        return this.send('/api/settings', { water_empty_cm: emptyCm, water_full_cm: fullCm });
+      }
+    };
+
+    /* ─── 5. SCADA Real-Time State & Communications Engine ───────── */
+    const scada = {
+      ws: null,
+      state: null,
+      lastRxTime: 0,
+      reconnectCount: 0,
+      reconnectTimer: null,
+      isOffline: true,
+
+      init() {
+        console.log('[AquaGuard SCADA] Initializing standalone telemetry console...');
+        sound.init();
+        logger.init();
+
+        const host = config.getTargetHost();
+        const hostDisp = document.getElementById('disp-host-ip');
+        if (hostDisp) hostDisp.textContent = host;
+
+        // Immediate HTTP fetch so screen populates instantly (<40ms)
+        this.fetchState();
+
+        // Establish WebSocket connection
+        this.connectWs();
+
+        // 1-second watchdog & health interval
+        setInterval(() => this.watchdog(), 1000);
+      },
+
+      connectWs() {
+        if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
+          return;
+        }
+
+        const host = config.getTargetHost();
+        const wsUrl = `ws://${host}/ws`;
+        this.setConnectionStatus('CONNECTING', '#f59e0b');
+
+        try {
+          this.ws = new WebSocket(wsUrl);
+
+          this.ws.onopen = () => {
+            console.log('[AquaGuard SCADA] WebSocket established to', wsUrl);
+            logger.log('SYS', `WebSocket linked to ${host}`);
+            this.reconnectCount = 0;
+            this.setConnectionStatus('ONLINE', '#10b981');
+          };
+
+          this.ws.onmessage = (evt) => {
+            try {
+              const data = JSON.parse(evt.data);
+              this.handleState(data);
+            } catch (e) {
+              console.warn('[AquaGuard] JSON parse err:', e);
+            }
+          };
+
+          this.ws.onclose = () => {
+            console.log('[AquaGuard SCADA] WebSocket closed');
+            this.scheduleReconnect();
+          };
+
+          this.ws.onerror = (err) => {
+            this.scheduleReconnect();
+          };
+        } catch (e) {
+          this.scheduleReconnect();
+        }
+      },
+
+      scheduleReconnect() {
+        if (this.reconnectTimer) return;
+        this.setConnectionStatus('OFFLINE', '#ef4444');
+        const delay = Math.min(1000 * Math.pow(1.3, this.reconnectCount), 4000);
+        this.reconnectCount++;
+
+        this.reconnectTimer = setTimeout(() => {
+          this.reconnectTimer = null;
+          this.connectWs();
+        }, delay);
+      },
+
+      fetchState() {
+        const host = config.getTargetHost();
+        fetch(`http://${host}/api/state`, { cache: 'no-store' })
+          .then(res => res.json())
+          .then(data => this.handleState(data))
+          .catch(() => {});
+      },
+
+      watchdog() {
+        const now = Date.now();
+        // If no WS message received for > 3.5s, trigger offline & attempt HTTP poll
+        if (this.lastRxTime > 0 && (now - this.lastRxTime) > 3500) {
+          this.setConnectionStatus('POLLING', '#f59e0b');
+          this.fetchState();
+        }
+      },
+
+      setConnectionStatus(label, color) {
+        const badge = document.getElementById('top-status-badge');
+        const dot = document.getElementById('top-status-dot');
+        const txt = document.getElementById('top-status-text');
+        const wsDot = document.getElementById('ws-latency-dot');
+        const wsTxt = document.getElementById('ws-latency-text');
+
+        if (txt) txt.textContent = label;
+        if (dot) dot.style.background = color;
+        if (wsTxt) wsTxt.textContent = label;
+        if (wsDot) {
+          wsDot.style.background = color;
+          wsDot.style.boxShadow = `0 0 8px ${color}`;
+        }
+        if (badge) {
+          badge.className = label === 'ONLINE' ? 'badge badge-safe' : (label === 'POLLING' || label === 'CONNECTING' ? 'badge badge-warn' : 'badge badge-danger');
+        }
+      },
+
+      handleState(data) {
+        if (!data) return;
+        this.lastRxTime = Date.now();
+        this.state = data;
+        this.setConnectionStatus('ONLINE', '#10b981');
+
+        // 1. Uptime Counter
+        if (data.uptime !== undefined) {
+          const h = Math.floor(data.uptime / 3600);
+          const m = Math.floor((data.uptime % 3600) / 60);
+          const s = data.uptime % 60;
+          const uptimeStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+          const upEl = document.getElementById('disp-uptime');
+          if (upEl) upEl.textContent = uptimeStr;
+        }
+
+        // 2. Mode Toggle (Auto / Manual)
+        const isAuto = data.mode === 'auto';
+        const btnAuto = document.getElementById('btn-mode-auto');
+        const btnMan = document.getElementById('btn-mode-manual');
+        if (btnAuto && btnMan) {
+          if (isAuto) {
+            btnAuto.style.background = '#00d4ff';
+            btnAuto.style.color = '#0a0e1a';
+            btnAuto.style.boxShadow = '0 0 12px rgba(0,212,255,0.4)';
+            btnMan.style.background = 'transparent';
+            btnMan.style.color = 'var(--text-dim)';
+            btnMan.style.boxShadow = 'none';
+          } else {
+            btnMan.style.background = '#10b981';
+            btnMan.style.color = '#002113';
+            btnMan.style.boxShadow = '0 0 12px rgba(16,185,129,0.4)';
+            btnAuto.style.background = 'transparent';
+            btnAuto.style.color = 'var(--text-dim)';
+            btnAuto.style.boxShadow = 'none';
+          }
+        }
+
+        // 3. Alarms & Critical Banner
+        const status = (data.status || 'SAFE').toUpperCase();
+        const alarmBox = document.getElementById('alarm-banner-container');
+        const alarmTitle = document.getElementById('alarm-title');
+        const alarmCode = document.getElementById('alarm-status-code');
+        const alarmMsg = document.getElementById('alarm-message');
+
+        if (status === 'CRITICAL' || status === 'WARNING' || data.interlocked) {
+          if (alarmBox) alarmBox.style.display = 'block';
+          if (status === 'CRITICAL') {
+            sound.playCriticalAlarm();
+            if (alarmTitle) { alarmTitle.textContent = 'CRITICAL FLOOD / SYSTEM HAZARD'; alarmTitle.style.color = 'var(--red)'; }
+            if (alarmCode) { alarmCode.textContent = 'ALARM TRIP'; alarmCode.className = 'badge badge-danger'; }
+          } else {
+            if (alarmTitle) { alarmTitle.textContent = 'CAUTIONARY WARNING'; alarmTitle.style.color = 'var(--amber)'; }
+            if (alarmCode) { alarmCode.textContent = 'WARNING'; alarmCode.className = 'badge badge-warn'; }
+          }
+          if (alarmMsg) alarmMsg.textContent = this.formatAlarmString(data.alarms, data.interlocked);
+        } else {
+          if (alarmBox) alarmBox.style.display = 'none';
+        }
+
+        // 4. Reservoir Water Level & Probes
+        const levelPct = data.level ? (data.level.percent || 0) : 0;
+        const waterDist = data.level ? (data.level.distanceCm || 0) : 0;
+        const depthCm = data.level ? (data.level.depthCm || 0) : 0;
+        const wires = data.level ? (data.level.wires || {}) : {};
+
+        const tankBody = document.getElementById('tank-water-body');
+        const tankText = document.getElementById('tank-level-overlay-text');
+        const dispLvlPct = document.getElementById('disp-level-pct');
+        const dispML = document.getElementById('disp-storage-ml');
+        const kpiHead = document.getElementById('kpi-head');
+        const sonicDist = document.getElementById('disp-sonic-dist');
+        const sonicDepth = document.getElementById('disp-sonic-depth');
+
+        if (tankBody) tankBody.style.height = `${Math.max(6, Math.min(100, levelPct))}%`;
+        if (tankText) tankText.textContent = `${levelPct}%`;
+        if (dispLvlPct) dispLvlPct.innerHTML = `${levelPct}<span style="color:#00d4ff;">%</span>`;
+        if (dispML) dispML.textContent = (levelPct * 250).toLocaleString();
+        if (kpiHead) kpiHead.textContent = depthCm > 0 ? depthCm.toFixed(1) : (levelPct * 0.4).toFixed(1);
+        if (sonicDist) sonicDist.textContent = waterDist > 0 ? `${waterDist.toFixed(1)} cm gap` : '-- cm gap';
+        if (sonicDepth) sonicDepth.textContent = depthCm > 0 ? `${depthCm.toFixed(1)} cm depth` : '-- cm depth';
+
+        // Probes L1..L4
+        this.updateProbe('warn', !!wires.warning);
+        this.updateProbe('high', !!wires.high);
+        this.updateProbe('med', !!wires.medium);
+        this.updateProbe('low', !!wires.low);
+
+        // 5. Radial Spillway Gate & Outflow SVG
+        const gateActual = data.gate ? (data.gate.actual !== undefined ? data.gate.actual : data.gate.target) : 0;
+        const gateTarget = data.gate ? (data.gate.target || 0) : 0;
+        const flowState = data.flow ? (data.flow.state || 'CLOSED') : 'CLOSED';
+        const isFlowOk = flowState === 'FLOW_CONFIRMED';
+
+        const gatePill = document.getElementById('gate-angle-pill');
+        const kpiGatePos = document.getElementById('kpi-gate-pos');
+        const kpiGateLbl = document.getElementById('kpi-gate-label');
+        const svgArm = document.getElementById('svg-gate-arm');
+        const svgAngleTxt = document.getElementById('svg-angle-text');
+        const svgDischargeTxt = document.getElementById('svg-discharge-text');
+        const svgStream = document.getElementById('svg-gate-stream');
+        const svgChevrons = document.getElementById('svg-gate-chevrons');
+        const kpiDischarge = document.getElementById('kpi-discharge');
+
+        if (gatePill) gatePill.textContent = `${gateActual}° ${gateActual === 0 ? 'CLOSED' : 'OPEN'}`;
+        if (kpiGatePos) kpiGatePos.textContent = `${gateActual}°`;
+        if (kpiGateLbl) kpiGateLbl.textContent = gateActual === 0 ? 'SEALED' : (gateActual >= 95 ? 'MAX EVAC' : 'DRAFT');
+
+        if (svgArm) {
+          // Rotate arm: 0 deg = 0 rot, 100 deg = -42 deg rotation
+          const rot = (gateActual / 100) * -42;
+          svgArm.setAttribute('transform', `rotate(${rot} 280 85)`);
+        }
+        if (svgAngleTxt) svgAngleTxt.textContent = `θ = ${gateActual.toFixed(1)}°`;
+
+        const dischargeRate = isFlowOk ? (gateActual * 1.84).toFixed(1) : '0.0';
+        if (svgDischargeTxt) svgDischargeTxt.textContent = `${dischargeRate} mL/s`;
+        if (kpiDischarge) kpiDischarge.textContent = dischargeRate;
+        if (svgStream) svgStream.setAttribute('opacity', isFlowOk ? '0.9' : (gateActual > 15 ? '0.3' : '0'));
+        if (svgChevrons) svgChevrons.setAttribute('opacity', isFlowOk ? '1' : '0');
+
+        // Update range slider only if user is not actively dragging it
+        const rangeInp = document.getElementById('gate-range-input');
+        const rangeDisp = document.getElementById('slider-target-disp');
+        if (rangeInp && document.activeElement !== rangeInp) {
+          rangeInp.value = gateTarget;
+          if (rangeDisp) rangeDisp.textContent = `${gateTarget}° [TARGET]`;
+        }
+
+        // Tailrace flow
+        const tailraceBadge = document.getElementById('tailrace-flow-badge');
+        const dispFlowState = document.getElementById('disp-flow-state');
+        const dispFlowMs = document.getElementById('disp-flow-ms');
+        if (tailraceBadge) {
+          tailraceBadge.textContent = isFlowOk ? 'WET (CONFIRMED)' : 'DRY';
+          tailraceBadge.className = isFlowOk ? 'badge badge-safe' : 'badge badge-cyan';
+        }
+        if (dispFlowState) {
+          dispFlowState.textContent = flowState;
+          dispFlowState.style.color = isFlowOk ? '#10b981' : '#859398';
+        }
+        if (dispFlowMs && data.flow) dispFlowMs.textContent = `${data.flow.confirmMs || 0} ms`;
+
+        // 6. Hydroelectric Turbine
+        const turbine = data.turbine || {};
+        const isTurbOn = !!turbine.on;
+        const turbVolt = (turbine.voltage || 0).toFixed(2);
+        const turbCurr = (turbine.currentMa || 0).toFixed(1);
+        const turbPwr = (turbine.powerMw || 0).toFixed(1);
+        const turbRpm = turbine.rpm || 0;
+
+        const kpiTurbPwr = document.getElementById('kpi-turbine-pwr');
+        const dispTurbRpm = document.getElementById('disp-turb-rpm');
+        const dispTurbVolt = document.getElementById('disp-turb-volt');
+        const dispTurbCurr = document.getElementById('disp-turb-curr');
+        const dispTurbPwr = document.getElementById('disp-turb-power');
+        const turbBadge = document.getElementById('turbine-status-badge');
+        const turbBtn = document.getElementById('btn-turbine-toggle');
+        const turbIcon = document.getElementById('turbine-header-icon');
+
+        if (kpiTurbPwr) kpiTurbPwr.textContent = turbPwr;
+        if (dispTurbRpm) dispTurbRpm.textContent = turbRpm;
+        if (dispTurbVolt) dispTurbVolt.textContent = turbVolt;
+        if (dispTurbCurr) dispTurbCurr.textContent = turbCurr;
+        if (dispTurbPwr) dispTurbPwr.textContent = turbPwr;
+        if (turbBadge) {
+          turbBadge.textContent = isTurbOn ? `RUNNING (${turbine.speed || 85}%)` : 'STANDBY';
+          turbBadge.className = isTurbOn ? 'badge badge-safe' : 'badge badge-cyan';
+        }
+        if (turbBtn) {
+          turbBtn.textContent = isTurbOn ? 'STOP TURBINE DEMO' : 'START GENERATOR DEMO';
+          turbBtn.className = isTurbOn ? 'btn btn-red' : 'btn btn-secondary';
+        }
+        if (turbIcon) {
+          if (isTurbOn) turbIcon.classList.add('spin-active');
+          else turbIcon.classList.remove('spin-active');
+        }
+
+        // 7. Dual Pumps
+        if (data.pumps && data.pumps.length >= 2) {
+          const p1 = data.pumps[0];
+          const p2 = data.pumps[1];
+          const btnP1 = document.getElementById('btn-p1-toggle');
+          const btnP2 = document.getElementById('btn-p2-toggle');
+          const p1Run = document.getElementById('p1-runtime-text');
+          const p2Run = document.getElementById('p2-runtime-text');
+          const dispP1Spd = document.getElementById('disp-p1-speed');
+          const dispP2Spd = document.getElementById('disp-p2-speed');
+          const sliderP1 = document.getElementById('p1-speed-slider');
+          const sliderP2 = document.getElementById('p2-speed-slider');
+
+          if (btnP1) {
+            btnP1.textContent = p1.on ? 'ON' : 'OFF';
+            btnP1.className = p1.on ? 'btn btn-emerald' : 'btn btn-secondary';
+          }
+          if (btnP2) {
+            btnP2.textContent = p2.on ? 'ON' : 'OFF';
+            btnP2.className = p2.on ? 'btn btn-emerald' : 'btn btn-secondary';
+          }
+          if (p1Run) p1Run.textContent = p1.on ? `RUNNING • ${this.formatSeconds(p1.runtimeS || 0)}` : 'STANDBY';
+          if (p2Run) p2Run.textContent = p2.on ? `RUNNING • ${this.formatSeconds(p2.runtimeS || 0)}` : 'STANDBY';
+          if (dispP1Spd) dispP1Spd.textContent = `${p1.speed || 100}%`;
+          if (dispP2Spd) dispP2Spd.textContent = `${p2.speed || 100}%`;
+          if (sliderP1 && document.activeElement !== sliderP1) sliderP1.value = p1.speed || 100;
+          if (sliderP2 && document.activeElement !== sliderP2) sliderP2.value = p2.speed || 100;
+        }
+
+        // 8. Sonar Proximity Radar & Obstacle Blip
+        const prox = data.proximity || {};
+        const pDist = prox.distanceCm !== undefined ? prox.distanceCm : 50;
+        const pZone = prox.zone || 'CLEAR';
+
+        const kpiRadarDist = document.getElementById('kpi-radar-dist');
+        const radarOverlay = document.getElementById('radar-dist-overlay');
+        const radarBlip = document.getElementById('radar-blip');
+        const radarBadge = document.getElementById('badge-radar-zone');
+        const interlockDot = document.getElementById('kpi-interlock-dot');
+        const interlockTxt = document.getElementById('kpi-interlock-text');
+
+        if (kpiRadarDist) kpiRadarDist.textContent = pDist.toFixed(1);
+        if (radarOverlay) radarOverlay.textContent = `${pDist.toFixed(1)} cm`;
+        if (radarBadge) {
+          radarBadge.textContent = pZone;
+          radarBadge.className = pZone === 'DANGER' ? 'badge badge-danger' : (pZone === 'WARNING' ? 'badge badge-warn' : 'badge badge-safe');
+        }
+
+        if (interlockDot && interlockTxt) {
+          if (data.interlocked) {
+            interlockDot.style.background = '#ef4444';
+            interlockTxt.textContent = 'INTERLOCKED (GATE BLOCKED)';
+            interlockTxt.style.color = '#ef4444';
+          } else {
+            interlockDot.style.background = '#10b981';
+            interlockTxt.textContent = 'CLEAR (DISENGAGED)';
+            interlockTxt.style.color = '#10b981';
+          }
+        }
+
+        // Blip mapping: 0..60 cm mapped to radius in 120px circular canvas
+        if (radarBlip) {
+          const ratio = Math.max(0.1, Math.min(1.0, pDist / 50));
+          const topPos = 60 - (ratio * 40);
+          const rightPos = 60 - (ratio * 30);
+          radarBlip.style.top = `${topPos}px`;
+          radarBlip.style.right = `${rightPos}px`;
+          radarBlip.style.background = pZone === 'DANGER' ? '#ef4444' : (pZone === 'WARNING' ? '#f59e0b' : '#10b981');
+          radarBlip.style.boxShadow = `0 0 10px ${radarBlip.style.background}`;
+        }
+
+        // 9. MQ-135 Gas & Flame Sensor
+        const gas = data.gas || {};
+        const gasRaw = gas.raw || 0;
+        const gasLvl = gas.level || 'NORMAL';
+        const dispGasRaw = document.getElementById('disp-gas-raw');
+        const dispGasWarm = document.getElementById('disp-gas-warmup');
+        const badgeGas = document.getElementById('badge-gas-level');
+
+        if (dispGasRaw) dispGasRaw.textContent = `${gasRaw} ADC`;
+        if (dispGasWarm) dispGasWarm.textContent = gas.warmupS > 0 ? `WARM-UP: ${gas.warmupS}s` : 'READY';
+        if (badgeGas) {
+          badgeGas.textContent = gasLvl;
+          badgeGas.className = gasLvl === 'DANGER' ? 'badge badge-danger' : (gasLvl === 'WARNING' ? 'badge badge-warn' : 'badge badge-safe');
+        }
+
+        const isFlame = !!data.fire;
+        const dispFlame = document.getElementById('disp-flame-state');
+        const flameDot = document.getElementById('flame-indicator-dot');
+        if (dispFlame && flameDot) {
+          if (isFlame) {
+            dispFlame.textContent = 'FIRE ALARM DETECTED!';
+            dispFlame.style.color = '#ef4444';
+            flameDot.style.background = '#ef4444';
+            flameDot.style.boxShadow = '0 0 12px #ef4444';
+          } else {
+            dispFlame.textContent = 'NOMINAL (NO FIRE)';
+            dispFlame.style.color = '#10b981';
+            flameDot.style.background = '#10b981';
+            flameDot.style.boxShadow = '0 0 8px #10b981';
+          }
+        }
+      },
+
+      updateProbe(name, isWet) {
+        const dot = document.getElementById(`dot-probe-${name}`);
+        const txt = document.getElementById(`txt-probe-${name}`);
+        if (dot) {
+          dot.style.background = isWet ? '#00d4ff' : 'var(--bg-highest)';
+          dot.style.boxShadow = isWet ? '0 0 8px #00d4ff' : 'none';
+        }
+        if (txt) {
+          txt.textContent = isWet ? 'WET' : 'DRY';
+          txt.style.color = isWet ? '#00d4ff' : 'var(--text-dim)';
+          txt.style.fontWeight = isWet ? '700' : '400';
+        }
+      },
+
+      formatAlarmString(alarms, interlocked) {
+        if (!alarms && !interlocked) return 'Nominal conditions.';
+        const list = [];
+        if (typeof alarms === 'number') {
+          if (alarms & 0x0001) list.push('FLAME DETECTED');
+          if (alarms & 0x0002) list.push('GAS WARNING');
+          if (alarms & 0x0004) list.push('TOXIC GAS DANGER');
+          if (alarms & 0x0008) list.push('PROXIMITY GATE LOCKOUT');
+          if (alarms & 0x0010) list.push('DAM BREACH SPILLWAY FLOOD');
+          if (alarms & 0x0020) list.push('PROBE FAULT');
+          if (alarms & 0x0040) list.push('RESERVOIR CAPACITY HIGH');
+        }
+        if (interlocked && !list.includes('PROXIMITY GATE LOCKOUT')) list.push('PROXIMITY INTERLOCK ACTIVE');
+        return list.length > 0 ? list.join(' • ') : 'System Trip / Interlock active.';
+      },
+
+      formatSeconds(s) {
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+      }
+    };
+
+    /* ─── 6. UI Interaction & Control Bindings ─────────────────────── */
+    const ui = {
+      overrideTimer: null,
+      overrideStart: 0,
+
+      onGateInput(val) {
+        const angle = parseInt(val, 10);
+        const disp = document.getElementById('slider-target-disp');
+        if (disp) disp.textContent = `${angle}° [TARGET]`;
+      },
+
+      onGateChange(val) {
+        api.setGate(val);
+      },
+
+      togglePump(id) {
+        const p = scada.state && scada.state.pumps && scada.state.pumps[id - 1];
+        const nextOn = p ? !p.on : true;
+        const speed = p && p.speed ? p.speed : 100;
+        api.setPump(id, nextOn, speed);
+      },
+
+      onPumpSpeedChange(id, speed) {
+        const p = scada.state && scada.state.pumps && scada.state.pumps[id - 1];
+        const on = p ? p.on : true;
+        api.setPump(id, on, speed);
+      },
+
+      toggleTurbine() {
+        const t = scada.state && scada.state.turbine;
+        const nextOn = t ? !t.on : true;
+        const speed = t && t.speed ? t.speed : 85;
+        api.setTurbine(nextOn, speed);
+      },
+
+      onTurbineSpeedChange(speed) {
+        const disp = document.getElementById('disp-turb-slider-pct');
+        if (disp) disp.textContent = `${speed}%`;
+        const t = scada.state && scada.state.turbine;
+        const on = t ? t.on : true;
+        api.setTurbine(on, speed);
+      },
+
+      startOverrideHold() {
+        this.overrideStart = Date.now();
+        const lbl = document.getElementById('btn-override-label');
+        if (lbl) lbl.textContent = 'HOLDING... (3.0s)';
+
+        this.overrideTimer = setInterval(() => {
+          const elapsed = (Date.now() - this.overrideStart) / 1000;
+          const remain = Math.max(0, 3.0 - elapsed);
+          if (lbl) lbl.textContent = `HOLDING... (${remain.toFixed(1)}s)`;
+          if (remain <= 0) {
+            clearInterval(this.overrideTimer);
+            this.overrideTimer = null;
+            if (lbl) lbl.textContent = 'OVERRIDE DISPATCHED!';
+            api.override();
+            setTimeout(() => {
+              if (lbl) lbl.textContent = 'HOLD 3s TO OVERRIDE INTERLOCK';
+            }, 2000);
+          }
+        }, 100);
+      },
+
+      cancelOverrideHold() {
+        if (this.overrideTimer) {
+          clearInterval(this.overrideTimer);
+          this.overrideTimer = null;
+          const lbl = document.getElementById('btn-override-label');
+          if (lbl) lbl.textContent = 'HOLD 3s TO OVERRIDE INTERLOCK';
+        }
+      },
+
+      openIpModal() {
+        const modal = document.getElementById('modal-ip-config');
+        const input = document.getElementById('input-target-ip');
+        if (input) input.value = config.getTargetHost();
+        if (modal) modal.classList.add('open');
+      },
+
+      closeIpModal() {
+        const modal = document.getElementById('modal-ip-config');
+        if (modal) modal.classList.remove('open');
+      },
+
+      saveIpAddress() {
+        const input = document.getElementById('input-target-ip');
+        if (input && input.value.trim() !== '') {
+          config.setTargetHost(input.value.trim());
+          const disp = document.getElementById('disp-host-ip');
+          if (disp) disp.textContent = input.value.trim();
+          this.closeIpModal();
+          logger.log('SYS', `Switching target IP to ${input.value.trim()}`);
+          if (scada.ws) scada.ws.close();
+          scada.connectWs();
+          scada.fetchState();
+        }
+      },
+
+      openSettingsModal() {
+        const modal = document.getElementById('modal-settings');
+        const emptyInp = document.getElementById('input-cal-empty');
+        const fullInp = document.getElementById('input-cal-full');
+        if (scada.state && scada.state.level) {
+          if (emptyInp && scada.state.level.emptyDistCm) emptyInp.value = scada.state.level.emptyDistCm;
+          if (fullInp && scada.state.level.fullDistCm) fullInp.value = scada.state.level.fullDistCm;
+        }
+        if (modal) modal.classList.add('open');
+      },
+
+      closeSettingsModal() {
+        const modal = document.getElementById('modal-settings');
+        if (modal) modal.classList.remove('open');
+      },
+
+      saveCalibration() {
+        const emptyInp = document.getElementById('input-cal-empty');
+        const fullInp = document.getElementById('input-cal-full');
+        const empty = parseFloat(emptyInp.value) || 42.0;
+        const full = parseFloat(fullInp.value) || 5.0;
+        api.saveSettings(empty, full);
+        this.closeSettingsModal();
+      }
+    };
+
+    // Boot on DOM ready
+    window.addEventListener('DOMContentLoaded', () => {
+      scada.init();
+    });
+  </script>
+</body>
+</html>
